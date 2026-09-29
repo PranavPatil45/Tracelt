@@ -23,7 +23,7 @@ export default function CampusSelect({
       if (rootRef.current && !rootRef.current.contains(e.target)) {
         setOpen(false);
         setQuery("");
-        onBlur?.();
+        // onBlur?.();
       }
     }
     document.addEventListener("mousedown", onClickOutside);

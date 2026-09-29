@@ -22,7 +22,6 @@
   margin-top: 14px;
   font-size: clamp(28px, 3.4vw, 34px);
   color: var(--text-primary);
-  text-align: center;
 }
 
 .login-card__subtitle {
@@ -136,7 +135,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: -6px;
 }
 
 .checkbox {
