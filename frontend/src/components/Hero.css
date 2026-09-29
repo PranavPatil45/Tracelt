@@ -1,0 +1,261 @@
+.hero {
+  position: relative;
+  z-index: 1;
+  padding: 20px 32px 60px;
+}
+
+.hero__inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.hero__copy {
+  max-width: 540px;
+}
+
+.hero__heading {
+  margin-top: 20px;
+  font-size: clamp(38px, 5.2vw, 60px);
+  color: var(--text-primary);
+}
+
+.hero__heading-accent {
+  background: var(--grad-signal);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero__sub {
+  margin-top: 22px;
+  font-size: 17.5px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  max-width: 460px;
+}
+
+.hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.hero__trust {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 26px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* Trace visual */
+.hero__visual {
+  position: relative;
+}
+
+.hero-trace-card,
+.hero__visual .trace-card {
+  position: relative;
+  aspect-ratio: 520 / 460;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    160deg,
+    var(--bg-elevated) 0%,
+    var(--bg-void) 100%
+  );
+  border: 1px solid var(--border-hair);
+  overflow: hidden;
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.6);
+}
+
+.hero-trace-card__grid,
+.hero__visual .trace-card__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border-hair) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-hair) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at 60% 40%, black 10%, transparent 75%);
+}
+
+.hero-trace-card__svg,
+.hero__visual .trace-card__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.trace-path {
+  animation: dash-flow 3s linear infinite;
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 2.6s ease-out infinite;
+  transform-origin: center;
+}
+
+.pulse-ring--delay {
+  animation-delay: 1.1s;
+}
+
+@keyframes pulse-ring {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.5);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.trace-chip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(12, 16, 24, 0.82);
+  border: 1px solid var(--border-hair-strong);
+  backdrop-filter: blur(6px);
+  font-family: var(--font-mono);
+}
+
+.trace-chip__label {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-primary);
+}
+
+.trace-chip__coord {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.trace-chip--lost {
+  left: 4%;
+  bottom: 20%;
+  color: var(--violet);
+}
+
+.trace-chip--match {
+  left: 42%;
+  top: 40%;
+  color: var(--amber);
+}
+
+.trace-chip--match .trace-chip__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+
+.trace-chip--found {
+  right: 4%;
+  top: 12%;
+  color: var(--cyan);
+}
+
+.item-float {
+  position: absolute;
+  left: 8%;
+  top: 8%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 10px 10px;
+  border-radius: 12px;
+  background: rgba(12, 16, 24, 0.85);
+  border: 1px solid var(--border-hair-strong);
+  backdrop-filter: blur(6px);
+  animation: float 5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.item-float__thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--violet-soft), var(--cyan-soft));
+}
+
+.item-float__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-float__title {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.item-float__meta {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.item-float__badge {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--cyan);
+  border: 1px solid rgba(69, 214, 224, 0.3);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+@media (max-width: 980px) {
+  .hero__inner {
+    grid-template-columns: 1fr;
+  }
+  .hero__copy {
+    max-width: 100%;
+  }
+  .hero-trace-card,
+  .hero__visual .trace-card {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding-top: 56px;
+  }
+  .item-float__meta,
+  .trace-chip__coord {
+    display: none;
+  }
+}

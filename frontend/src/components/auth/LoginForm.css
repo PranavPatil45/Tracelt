@@ -1,0 +1,349 @@
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.015);
+
+  /* The core frosted-glass effect */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  /* Semi-transparent white border to catch light on top/left edges */
+  border: 1px solid rgba(255, 255, 255, 0.082);
+  border-radius: 20px;
+
+  /* Deep, subtle glow to lift the card from the background */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  /* Card Spacing & Sizing */
+  padding: 30px;
+}
+
+.login-card__heading {
+  margin-top: 14px;
+  font-size: clamp(28px, 3.4vw, 34px);
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.login-card__subtitle {
+  margin-top: 10px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.login-form {
+  margin-top: 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Fields */
+.field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.field__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-hair-strong);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.field__control:focus-within {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 4px rgba(69, 214, 224, 0.12);
+}
+
+.field__control--error {
+  border-color: rgba(240, 181, 99, 0.55);
+}
+
+.field__control--error:focus-within {
+  box-shadow: 0 0 0 4px rgba(240, 181, 99, 0.12);
+}
+
+.field__icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.field__control input {
+  flex: 1;
+  min-width: 0;
+  padding: 13px 0;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14.5px;
+  font-family: var(--font-body);
+}
+
+.field__control input::placeholder {
+  color: var(--text-muted);
+}
+
+.field__control input:focus {
+  outline: none;
+}
+
+.field__toggle {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.2s ease;
+}
+
+.field__toggle:hover {
+  color: var(--text-primary);
+}
+
+.field__toggle:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.field__error {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--amber);
+}
+
+/* Row: remember me + forgot password */
+.login-form__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -6px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.checkbox input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.checkbox__box {
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border: 1px solid var(--border-hair-strong);
+  background: var(--bg-primary);
+  flex-shrink: 0;
+  position: relative;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.checkbox input:checked + .checkbox__box {
+  background: var(--grad-signal);
+  border-color: transparent;
+}
+
+.checkbox input:checked + .checkbox__box::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid #06090f;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox input:focus-visible + .checkbox__box {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.login-form__forgot {
+  font-size: 13.5px;
+  color: var(--cyan);
+  transition: opacity 0.2s ease;
+}
+
+.login-form__forgot:hover {
+  opacity: 0.8;
+}
+
+/* Submit */
+.login-form__error {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--amber);
+  background: rgba(240, 181, 99, 0.08);
+  border: 1px solid rgba(240, 181, 99, 0.25);
+  border-radius: 10px;
+  padding: 11px 14px;
+}
+
+.login-form__submit {
+  width: 100%;
+  justify-content: center;
+  padding: 14px 24px;
+  font-size: 15px;
+  margin-top: 10px;
+}
+
+.login-form__submit:hover:not(:disabled) .login-form__submit-arrow {
+  transform: translateX(3px);
+}
+
+.login-form__submit-arrow {
+  transition: transform 0.25s ease;
+}
+
+.login-form__submit:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Divider */
+.login-form__divider {
+  position: relative;
+  text-align: center;
+  margin: 2px 0;
+}
+
+.login-form__divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-hair);
+}
+
+.login-form__divider span {
+  position: relative;
+  background: var(--bg-elevated);
+  padding: 0 14px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* Social */
+.social-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 20px;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-hair-strong);
+  color: var(--text-primary);
+  font-size: 14.5px;
+  font-weight: 500;
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s ease,
+    background 0.25s ease;
+}
+
+.social-btn:hover {
+  border-color: var(--border-hair-strong);
+  background: var(--bg-elevated-2);
+  transform: translateY(-1px);
+}
+
+.social-btn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* Footer */
+.login-card__footer {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.login-card__footer-link {
+  color: var(--cyan);
+  font-weight: 500;
+}
+
+.login-card__footer-link:hover {
+  opacity: 0.85;
+}
+/* Custom dark theme scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hair-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Firefox support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hair-strong) transparent;
+}
+
+input:-webkit-autofill {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: #ffffff !important;
+}

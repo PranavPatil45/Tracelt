@@ -1,0 +1,315 @@
+/* Item Card Styles for Explore Grid */
+
+.explore-card {
+  background: var(--bg-elevated, #10151f);
+  border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+  border-radius: var(--radius-md, 14px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.explore-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(230, 236, 248, 0.16);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
+}
+
+.explore-card--lost:hover {
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.explore-card--found:hover {
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+/* Media Thumbnail Container */
+.explore-card__media {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: var(--bg-void, #080b11);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+}
+
+.explore-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.explore-card:hover .explore-card__img {
+  transform: scale(1.04);
+}
+
+.explore-card__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.explore-card__placeholder-cat {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Badges on Thumbnail */
+.explore-card__badges {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.explore-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 100px;
+  backdrop-filter: blur(10px);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.explore-type-badge--lost {
+  background: rgba(245, 158, 11, 0.22);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+.explore-type-badge--found {
+  background: rgba(16, 185, 129, 0.22);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #34d399;
+}
+
+.explore-owner-badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 100px;
+  background: rgba(168, 85, 247, 0.25);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  color: #c084fc;
+  backdrop-filter: blur(10px);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: auto;
+}
+
+/* Card Body */
+.explore-card__body {
+  padding: 16px 18px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.explore-card__category {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+
+.explore-card--found .explore-card__category {
+  color: #10b981;
+}
+
+.explore-card--lost .explore-card__category {
+  color: #f59e0b;
+}
+
+.explore-card__title {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.explore-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: auto;
+  padding-bottom: 14px;
+}
+
+.explore-card__meta-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.explore-card__meta-item svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+/* Card Status & Action Footer */
+.explore-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+}
+
+.explore-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.explore-card__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+}
+
+.explore-card__status-dot--active {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.explore-card__status-dot--available {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.explore-card__status-dot--matched {
+  background: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+}
+
+.explore-card__status-dot--claimed {
+  background: #a855f7;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
+}
+
+.explore-card__status-dot--recovered,
+.explore-card__status-dot--returned {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.explore-card__status-dot--closed {
+  background: #64748b;
+  box-shadow: 0 0 6px rgba(100, 116, 139, 0.6);
+}
+
+.explore-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--cyan);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(6, 182, 212, 0.06);
+}
+
+.explore-card__btn:hover {
+  background: rgba(6, 182, 212, 0.15);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.explore-card--found .explore-card__btn {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.explore-card--found .explore-card__btn:hover {
+  background: rgba(16, 185, 129, 0.18);
+  color: #fff;
+}
+
+/* Skeleton Loading Shimmer */
+.explore-skeleton {
+  pointer-events: none;
+}
+
+.skeleton-media {
+  width: 100%;
+  height: 180px;
+  background: linear-gradient(90deg, #10151f 25%, #182030 50%, #10151f 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #10151f 25%, #182030 50%, #10151f 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  margin-bottom: 8px;
+}
+
+.skeleton-line--cat {
+  width: 40%;
+  height: 10px;
+}
+
+.skeleton-line--title {
+  width: 85%;
+  height: 16px;
+  margin-bottom: 14px;
+}
+
+.skeleton-line--meta {
+  width: 65%;
+  height: 12px;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

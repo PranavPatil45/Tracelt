@@ -1,0 +1,246 @@
+.brand-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 44px;
+  background: linear-gradient(
+    165deg,
+    var(--bg-elevated) 0%,
+    var(--bg-void) 130%
+  );
+  border-right: 1px solid var(--border-hair);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.brand-panel__ambient-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border-hair) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-hair) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at 30% 85%, black 5%, transparent 60%);
+  pointer-events: none;
+}
+
+.brand-panel__ambient-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      45% 35% at 12% 92%,
+      rgba(140, 123, 255, 0.12),
+      transparent 65%
+    ),
+    radial-gradient(
+      40% 30% at 92% 8%,
+      rgba(69, 214, 224, 0.09),
+      transparent 65%
+    );
+  pointer-events: none;
+}
+
+.brand-panel__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+
+  margin: auto 0;
+  width: 100%;
+}
+
+/* Logo -------------------------------------------------------------- */
+
+.brand-panel__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 19px;
+}
+
+/* Hero ---------------------------------------------------------------- */
+
+.brand-panel__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.brand-panel__heading {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 2.6vw, 48px);
+  font-weight: 600;
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.brand-panel__heading-accent {
+  background: var(--grad-signal);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-panel__subtext {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  max-width: 360px;
+}
+
+/* Mini feature list ----------------------------------------------------- */
+
+.brand-panel__features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  list-style: none;
+}
+
+.brand-panel__feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.brand-panel__feature-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  color: var(--cyan);
+  background: var(--cyan-soft);
+  margin-top: 1px;
+}
+
+.brand-panel__feature-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.brand-panel__feature-label {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.brand-panel__feature-text {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+/* Embedded TraceltPoster --------------------------------------------------
+   TraceltPoster is a landscape 16:9 hero component; this sidebar column
+   is much narrower, so the aspect-ratio lock is overridden here to let
+   it breathe vertically instead of being crushed. The component's own
+   mobile breakpoint (620px) is what actually reflows the layout — this
+   wrapper just makes sure that breakpoint applies at sidebar widths too. */
+
+.brand-panel__poster {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-hair);
+  box-shadow: 0 10px 26px -16px rgba(0, 0, 0, 0.6);
+}
+
+.brand-panel__poster .tp-root {
+  aspect-ratio: auto;
+  min-height: 0;
+  padding: 28px 0;
+}
+
+/* Trust element --------------------------------------------------------- */
+
+.brand-panel__trust {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hair);
+  background: rgba(16, 21, 31, 0.4);
+}
+
+.brand-panel__trust-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--cyan);
+  background: var(--cyan-soft);
+  margin-top: 1px;
+}
+
+.brand-panel__trust-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand-panel__trust-title {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.brand-panel__trust-text {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* Responsive -------------------------------------------------------------- */
+
+@media (max-width: 1180px) {
+  .brand-panel__content {
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 980px) {
+  .brand-panel {
+    padding: 30px 32px;
+  }
+
+  .brand-panel__content {
+    gap: 18px;
+    max-width: none;
+  }
+
+  .brand-panel__subtext {
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .brand-panel__features {
+    display: none;
+  }
+
+  .brand-panel__trust {
+    display: none;
+  }
+
+  .brand-panel__poster {
+    display: none;
+  }
+
+  .brand-panel__heading {
+    font-size: 22px;
+  }
+}

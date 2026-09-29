@@ -1,0 +1,58 @@
+.final-cta__card {
+  position: relative;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  text-align: center;
+  padding: 80px 32px;
+  border-radius: 28px;
+  border: 1px solid var(--border-hair);
+  background:
+    radial-gradient(60% 100% at 50% 0%, rgba(140, 123, 255, 0.14), transparent 65%),
+    linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-void) 140%);
+  overflow: hidden;
+}
+
+.final-cta__trace {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  opacity: 0.6;
+}
+
+.final-cta__trace svg {
+  width: 100%;
+  height: 60px;
+}
+
+.final-cta__card h2 {
+  position: relative;
+  z-index: 1;
+  margin-top: 16px;
+  font-size: clamp(30px, 4.4vw, 46px);
+}
+
+.final-cta__card p {
+  position: relative;
+  z-index: 1;
+  margin: 18px auto 34px;
+  max-width: 460px;
+  color: var(--text-secondary);
+  font-size: 16.5px;
+  line-height: 1.6;
+}
+
+.final-cta__actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .final-cta__card {
+    padding: 56px 22px;
+  }
+}

@@ -1,0 +1,217 @@
+.recent-reports-section {
+  margin-bottom: 32px;
+}
+
+.reports-table-container {
+  background: var(--bg-elevated, #10151f);
+  border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+  border-radius: var(--radius-md, 14px);
+  overflow: hidden;
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.reports-table th {
+  padding: 14px 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.reports-table__th-action {
+  text-align: right;
+}
+
+.reports-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-hair, rgba(230, 236, 248, 0.06));
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.reports-table tr:last-child td {
+  border-bottom: none;
+}
+
+.reports-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.report-item-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-item-cell__emoji {
+  font-size: 18px;
+}
+
+.report-item-cell__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.report-type-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.report-type-badge--lost {
+  background: rgba(240, 181, 99, 0.12);
+  color: var(--amber);
+  border: 1px solid rgba(240, 181, 99, 0.25);
+}
+
+.report-type-badge--found {
+  background: rgba(69, 214, 224, 0.12);
+  color: var(--cyan);
+  border: 1px solid rgba(69, 214, 224, 0.25);
+}
+
+.report-meta-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cell-icon {
+  color: var(--text-muted);
+}
+
+.report-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.status-badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.report-status-badge--cyan {
+  background: rgba(69, 214, 224, 0.12);
+  color: var(--cyan);
+}
+.report-status-badge--cyan .status-badge-dot {
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+}
+
+.report-status-badge--amber {
+  background: rgba(240, 181, 99, 0.12);
+  color: var(--amber);
+}
+.report-status-badge--amber .status-badge-dot {
+  background: var(--amber);
+}
+
+.report-status-badge--green {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+.report-status-badge--green .status-badge-dot {
+  background: #10b981;
+}
+
+.report-status-badge--gray {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+}
+.report-status-badge--gray .status-badge-dot {
+  background: var(--text-muted);
+}
+
+.reports-table__td-action {
+  text-align: right;
+}
+
+.reports-view-action {
+  background: transparent;
+  border: none;
+  color: var(--cyan);
+  font-size: 12.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reports-view-action:hover {
+  background: rgba(69, 214, 224, 0.1);
+}
+
+/* Mobile cards */
+.reports-mobile-list {
+  display: none;
+  padding: 12px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-mobile-card {
+  background: var(--bg-void, #080b11);
+  border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+  border-radius: var(--radius-sm, 8px);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.report-mobile-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.report-mobile-card__details {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.report-mobile-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-hair, rgba(230, 236, 248, 0.06));
+}
+
+@media (max-width: 768px) {
+  .reports-table {
+    display: none;
+  }
+  .reports-mobile-list {
+    display: flex;
+  }
+}

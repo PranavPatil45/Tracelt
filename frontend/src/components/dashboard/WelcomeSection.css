@@ -1,0 +1,138 @@
+.welcome-section {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 8px 0 28px;
+  border-bottom: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+  margin-bottom: 28px;
+}
+
+.welcome-section__content {
+  max-width: 600px;
+}
+
+.welcome-section__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  margin-bottom: 8px;
+}
+
+.welcome-section__eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+.welcome-section__campus-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(69, 214, 224, 0.08);
+  border: 1px solid rgba(69, 214, 224, 0.2);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  color: var(--cyan);
+  margin-left: 6px;
+}
+
+.welcome-section__meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.welcome-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+  padding: 4px 10px;
+  border-radius: var(--radius-sm, 8px);
+}
+
+.welcome-meta-item .meta-icon {
+  color: var(--cyan);
+}
+
+.welcome-section__title {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+
+.welcome-section__title .text-gradient {
+  background: var(--grad-signal);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.welcome-section__subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.welcome-section__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.welcome-section__btn-lost {
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 18px rgba(69, 214, 224, 0.25);
+}
+
+.welcome-section__btn-found {
+  padding: 12px 20px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-hair-strong, rgba(230, 236, 248, 0.14));
+}
+
+.welcome-section__btn-found:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(69, 214, 224, 0.4);
+}
+
+@media (max-width: 860px) {
+  .welcome-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+    padding-bottom: 22px;
+  }
+
+  .welcome-section__actions {
+    width: 100%;
+  }
+
+  .welcome-section__btn-lost,
+  .welcome-section__btn-found {
+    flex: 1;
+    justify-content: center;
+    padding: 11px 16px;
+    font-size: 13.5px;
+  }
+}

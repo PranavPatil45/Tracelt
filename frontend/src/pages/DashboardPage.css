@@ -1,0 +1,134 @@
+/* Modern Dashboard Layout */
+.dashboard-app {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  background-color: var(--bg-primary, #0b0f17);
+  color: var(--text-primary, #e9edf6);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Loading State */
+.dashboard-loading {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  background-color: var(--bg-primary, #0b0f17);
+  color: var(--text-secondary, #aab2c5);
+}
+
+.dashboard-loading__spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(255, 255, 255, 0.08);
+  border-top-color: var(--cyan, #45d6e0);
+  border-radius: 50%;
+  animation: dashSpin 0.75s linear infinite;
+}
+
+@keyframes dashSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dashboard-loading p {
+  font-family: var(--font-body);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+/* Main Area (Header + Scrollable Content) */
+.dashboard-main-area {
+  flex: 1;
+  margin-left: 260px;
+  width: calc(100% - 260px);
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  position: relative;
+  scroll-behavior: smooth;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 24px 32px 64px;
+  max-width: 1320px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* 2-Column Section for Campus Activity + Match Center */
+.dashboard-2col-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 24px;
+  margin-bottom: 32px;
+  align-items: start;
+}
+
+/* Subview Wrapper */
+.dashboard-subview-wrapper {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile & Tablet Responsiveness */
+@media (max-width: 1100px) {
+  .dashboard-2col-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-app {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .dashboard-main-area {
+    margin-left: 0;
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: visible;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 16px 16px 48px;
+  }
+
+  .dashboard-2col-grid {
+    gap: 18px;
+  }
+}

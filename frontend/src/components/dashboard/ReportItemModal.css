@@ -1,0 +1,227 @@
+.report-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 11, 17, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.report-modal {
+  width: 100%;
+  max-width: 540px;
+  background: var(--bg-elevated-2, #151b27);
+  border: 1px solid var(--border-hair-strong, rgba(230, 236, 248, 0.14));
+  border-radius: var(--radius-lg, 22px);
+  padding: 24px 28px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.report-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.report-modal__type-switcher {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-void, #080b11);
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+}
+
+.report-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.report-switch-btn--active-lost {
+  background: rgba(240, 181, 99, 0.16);
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.report-switch-btn--active-found {
+  background: rgba(69, 214, 224, 0.16);
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.report-modal__close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.2s ease;
+}
+
+.report-modal__close-btn:hover {
+  color: var(--text-primary);
+}
+
+.report-modal__campus-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+  margin-bottom: 20px;
+}
+
+.campus-pin {
+  color: var(--cyan);
+}
+
+.report-modal__campus-info strong {
+  color: var(--text-primary);
+}
+
+/* Form */
+.report-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-group .req {
+  color: var(--cyan);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.modal-input,
+.modal-select,
+.modal-textarea {
+  width: 100%;
+  background: var(--bg-void, #080b11);
+  border: 1px solid var(--border-hair-strong, rgba(230, 236, 248, 0.14));
+  border-radius: var(--radius-sm, 8px);
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.modal-input:focus,
+.modal-select:focus,
+.modal-textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px var(--cyan);
+}
+
+.modal-textarea {
+  resize: vertical;
+  min-height: 75px;
+}
+
+.report-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+}
+
+.report-modal__submit-btn {
+  padding: 10px 22px;
+  font-size: 13.5px;
+}
+
+/* Success Screen */
+.report-modal__success-screen {
+  padding: 36px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.success-icon-wrap {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+}
+
+.report-modal__success-screen h3 {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.report-modal__success-screen p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 360px;
+}
+
+@media (max-width: 560px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}

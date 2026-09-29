@@ -1,0 +1,34 @@
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite
+*.db
+*.db.*
+*.backup
+*.test_backup
+*.bak
+
+# Node & Frontend
+node_modules/
+dist/
+.DS_Store
+*.local
+.env
+
+# Uploads (ignore user-uploaded files, preserve folder structure)
+backend/uploads/*
+!backend/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# IDEs & Editor metadata
+.vscode/
+.idea/
+
