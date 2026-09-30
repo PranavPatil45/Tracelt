@@ -113,7 +113,7 @@ export default function TraceltPoster() {
 
           <div className="tp-brand-text">
             <h1 className="tp-wordmark">
-              TR<span className="tp-accent-letter">^</span>CELT
+              TR<span className="tp-accent-letter">Λ</span>CELT
             </h1>
             <div className="tp-subtitle-row">
               <span className="tp-subtitle-line" />
