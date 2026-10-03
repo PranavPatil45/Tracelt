@@ -1,5 +1,12 @@
-import { Sparkles, Check, ArrowRight, MapPin, Clock, ShieldCheck } from 'lucide-react'
-import './MatchCenter.css'
+import {
+  Sparkles,
+  Check,
+  ArrowRight,
+  MapPin,
+  Clock,
+  ShieldCheck,
+} from "lucide-react";
+import "./MatchCenter.css";
 
 export default function MatchCenter({ match, onReviewMatch }) {
   if (!match) {
@@ -7,7 +14,6 @@ export default function MatchCenter({ match, onReviewMatch }) {
       <section className="match-center-section" aria-label="Possible Matches">
         <div className="section-title-row">
           <div>
-            <span className="eyebrow">Algorithmic Correlation</span>
             <h3 className="section-title">Possible Matches</h3>
           </div>
         </div>
@@ -20,19 +26,19 @@ export default function MatchCenter({ match, onReviewMatch }) {
           </p>
         </div>
       </section>
-    )
+    );
   }
 
-  const { userReport, matchedItem, score, reasons } = match
+  const { userReport, matchedItem, score, reasons } = match;
 
   return (
     <section className="match-center-section" aria-label="Possible Matches">
       <div className="section-title-row">
         <div>
-          <span className="eyebrow">Smart Match Engine</span>
           <h3 className="section-title">Possible Matches</h3>
           <p className="section-subtitle">
-            High-confidence correlation detected between your report and campus finds.
+            High-confidence correlation detected between your report and campus
+            finds.
           </p>
         </div>
       </div>
@@ -56,7 +62,9 @@ export default function MatchCenter({ match, onReviewMatch }) {
             <span className="comparison-side__label">YOUR LOST ITEM</span>
             <div className="comparison-side__content">
               <div className="comparison-side__icon-box">
-                <span className="comparison-side__emoji">{userReport.icon}</span>
+                <span className="comparison-side__emoji">
+                  {userReport.icon}
+                </span>
               </div>
               <div className="comparison-side__text">
                 <h4 className="comparison-side__title">{userReport.title}</h4>
@@ -88,7 +96,9 @@ export default function MatchCenter({ match, onReviewMatch }) {
             </span>
             <div className="comparison-side__content">
               <div className="comparison-side__icon-box comparison-side__icon-box--cyan">
-                <span className="comparison-side__emoji">{matchedItem.icon}</span>
+                <span className="comparison-side__emoji">
+                  {matchedItem.icon}
+                </span>
               </div>
               <div className="comparison-side__text">
                 <h4 className="comparison-side__title">{matchedItem.title}</h4>
@@ -124,7 +134,9 @@ export default function MatchCenter({ match, onReviewMatch }) {
         <div className="match-card__footer">
           <div className="match-card__security-note">
             <ShieldCheck size={14} className="security-icon" />
-            <span>Campus identity verification required prior to recovery handover</span>
+            <span>
+              Campus identity verification required prior to recovery handover
+            </span>
           </div>
 
           <button
@@ -138,5 +150,5 @@ export default function MatchCenter({ match, onReviewMatch }) {
         </div>
       </div>
     </section>
-  )
+  );
 }

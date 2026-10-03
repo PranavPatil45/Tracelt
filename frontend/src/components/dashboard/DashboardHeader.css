@@ -34,7 +34,7 @@
 }
 
 .dash-header__title {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);

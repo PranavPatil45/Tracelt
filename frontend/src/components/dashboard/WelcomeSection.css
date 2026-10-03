@@ -70,7 +70,7 @@
 }
 
 .welcome-section__title {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-size: clamp(24px, 3vw, 32px);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -79,7 +79,7 @@
 }
 
 .welcome-section__title .text-gradient {
-  background: var(--grad-signal);
+  background: var(--text-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

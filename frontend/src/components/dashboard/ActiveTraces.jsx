@@ -1,5 +1,12 @@
-import { Radar, Sparkles, ArrowRight, MapPin, Clock, AlertCircle } from 'lucide-react'
-import './ActiveTraces.css'
+import {
+  Radar,
+  Sparkles,
+  ArrowRight,
+  MapPin,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import "./ActiveTraces.css";
 
 export default function ActiveTraces({
   traces = [],
@@ -11,10 +18,6 @@ export default function ActiveTraces({
     <section className="active-traces-section" aria-label="Active Traces">
       <div className="section-title-row">
         <div>
-          <div className="section-title-row__badge">
-            <span className="live-pulse-dot" />
-            <span>Real-time Tracing</span>
-          </div>
           <h3 className="section-title">Active Traces</h3>
           <p className="section-subtitle">
             Keep track of your ongoing lost-item reports.
@@ -24,7 +27,7 @@ export default function ActiveTraces({
         <button
           type="button"
           className="btn btn-ghost section-action-btn"
-          onClick={() => onOpenReportModal && onOpenReportModal('lost')}
+          onClick={() => onOpenReportModal && onOpenReportModal("lost")}
         >
           + New Trace
         </button>
@@ -35,12 +38,13 @@ export default function ActiveTraces({
           <div className="empty-state-card__icon">🎒</div>
           <h4 className="empty-state-card__title">No active traces</h4>
           <p className="empty-state-card__desc">
-            Report a lost item and Tracelt will start looking for possible matches across your campus.
+            Report a lost item and Tracelt will start looking for possible
+            matches across your campus.
           </p>
           <button
             type="button"
             className="btn btn-primary btn-sm"
-            onClick={() => onOpenReportModal && onOpenReportModal('lost')}
+            onClick={() => onOpenReportModal && onOpenReportModal("lost")}
           >
             Report Lost Item
           </button>
@@ -48,12 +52,12 @@ export default function ActiveTraces({
       ) : (
         <div className="active-traces-list">
           {traces.map((trace) => {
-            const hasMatch = Boolean(trace.hasMatch && trace.match)
+            const hasMatch = Boolean(trace.hasMatch && trace.match);
 
             return (
               <div
                 key={trace.id}
-                className={`trace-card ${hasMatch ? 'trace-card--has-match' : ''}`}
+                className={`trace-card ${hasMatch ? "trace-card--has-match" : ""}`}
               >
                 <div className="trace-card__main">
                   <div className="trace-card__icon-box">
@@ -64,13 +68,17 @@ export default function ActiveTraces({
                   <div className="trace-card__content">
                     <div className="trace-card__header">
                       <h4 className="trace-card__title">{trace.title}</h4>
-                      <span className="trace-card__category">{trace.category}</span>
+                      <span className="trace-card__category">
+                        {trace.category}
+                      </span>
                     </div>
 
                     <div className="trace-card__meta">
                       <span className="trace-meta-item">
                         <MapPin size={13} className="trace-meta-item__icon" />
-                        <span>Lost at: <strong>{trace.lostLocation}</strong></span>
+                        <span>
+                          Lost at: <strong>{trace.lostLocation}</strong>
+                        </span>
                       </span>
 
                       <span className="trace-meta-item">
@@ -84,7 +92,9 @@ export default function ActiveTraces({
                         <span className="radar-spinner" />
                         {trace.status}
                       </span>
-                      <span className="trace-card__detail-text">{trace.statusDetail}</span>
+                      <span className="trace-card__detail-text">
+                        {trace.statusDetail}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -96,10 +106,13 @@ export default function ActiveTraces({
                       <div className="trace-match-banner__title">
                         <Sparkles size={14} className="sparkle-icon" />
                         <span>Possible match detected</span>
-                        <span className="match-percent-tag">{trace.match.score}% match</span>
+                        <span className="match-percent-tag">
+                          {trace.match.score}% match
+                        </span>
                       </div>
                       <p className="trace-match-banner__location">
-                        Found at {trace.match.location} &bull; {trace.match.foundTime}
+                        Found at {trace.match.location} &bull;{" "}
+                        {trace.match.foundTime}
                       </p>
                     </div>
 
@@ -125,10 +138,10 @@ export default function ActiveTraces({
                   </div>
                 )}
               </div>
-            )
+            );
           })}
         </div>
       )}
     </section>
-  )
+  );
 }
