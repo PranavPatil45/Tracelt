@@ -1,6 +1,8 @@
+import uuid
+from pathlib import Path
 from datetime import timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -14,10 +16,22 @@ from app.models.match import Match
 from app.models.claim import Claim
 from app.models.notification import Notification
 from app.services import messaging_service
-from app.schemas.auth import UserRegister, UserLogin, UserOut, Token, UserDashboardStats
-from app.crud.user import get_user_by_email, create_user
+from app.schemas.auth import (
+    UserRegister,
+    UserLogin,
+    UserOut,
+    Token,
+    UserDashboardStats,
+    UserProfileUpdate,
+)
+from app.crud.user import get_user_by_email, create_user, update_user_profile
 from app.core.security import verify_password, create_access_token
 from app.core.deps import get_current_user
+from app.core.file_storage import UPLOADS_DIR
+
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 router = APIRouter(tags=["Authentication"])
 
@@ -113,12 +127,162 @@ def login_for_access_token(
 
 
 @router.get(
-    "/me",
+    "/users/me",
     response_model=UserOut,
     summary="Retrieve current authenticated user profile",
 )
+@router.get(
+    "/me",
+    response_model=UserOut,
+    summary="Retrieve current authenticated user profile (alias)",
+)
 def get_me(current_user: User = Depends(get_current_user)) -> Any:
     """Returns profile information for the user authenticated via Bearer token."""
+    return UserOut.model_validate(current_user)
+
+
+@router.patch(
+    "/users/me",
+    response_model=UserOut,
+    summary="Update current authenticated user profile",
+)
+@router.patch(
+    "/me",
+    response_model=UserOut,
+    summary="Update current authenticated user profile (alias)",
+)
+def update_profile(
+    profile_in: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Updates the authenticated user's profile details.
+    Only permitted fields (full_name, phone, bio, campus, department, profile_image) are updated.
+    Security: Privileged fields like id, email, role, is_active cannot be modified here.
+    """
+    update_data = profile_in.model_dump(exclude_unset=True)
+
+    if "full_name" in update_data:
+        name = (update_data["full_name"] or "").strip()
+        if not name or len(name) < 2:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Full name must be at least 2 characters.",
+            )
+        update_data["full_name"] = name
+
+    if "phone" in update_data:
+        phone = (update_data["phone"] or "").strip()
+        update_data["phone"] = phone if phone else None
+
+    if "bio" in update_data:
+        bio = (update_data["bio"] or "").strip()
+        update_data["bio"] = bio if bio else None
+
+    if "campus" in update_data:
+        campus = (update_data["campus"] or "").strip()
+        if not campus:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Campus cannot be empty.",
+            )
+        update_data["campus"] = campus
+
+    if "department" in update_data:
+        dept = (update_data["department"] or "").strip()
+        update_data["department"] = dept if dept else None
+
+    if "profile_image" in update_data:
+        img = update_data["profile_image"]
+        update_data["profile_image"] = img.strip() if img and isinstance(img, str) else None
+
+    updated_user = update_user_profile(db=db, user=current_user, profile_data=update_data)
+    return UserOut.model_validate(updated_user)
+
+
+@router.post(
+    "/users/me/avatar",
+    response_model=UserOut,
+    summary="Upload profile picture for current user",
+)
+@router.post(
+    "/me/avatar",
+    response_model=UserOut,
+    summary="Upload profile picture for current user (alias)",
+)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Uploads a profile picture for the authenticated user.
+    Validates file extension and MIME type.
+    Saves to uploads directory and updates profile_image.
+    """
+    file_ext = Path(file.filename or "").suffix.lower()
+    if file_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid image format. Allowed formats: JPG, JPEG, PNG, WEBP.",
+        )
+
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file format. Please upload a valid image file.",
+        )
+
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File size exceeds the 5MB limit. Please choose a smaller image.",
+        )
+
+    if len(contents) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty.",
+        )
+
+    unique_filename = f"avatar_{uuid.uuid4().hex}{file_ext}"
+    destination = UPLOADS_DIR / unique_filename
+
+    try:
+        with open(destination, "wb") as f:
+            f.write(contents)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save avatar image on server.",
+        )
+
+    current_user.profile_image = f"/uploads/{unique_filename}"
+    db.commit()
+    db.refresh(current_user)
+    return UserOut.model_validate(current_user)
+
+
+@router.delete(
+    "/users/me/avatar",
+    response_model=UserOut,
+    summary="Remove profile picture for current user",
+)
+@router.delete(
+    "/me/avatar",
+    response_model=UserOut,
+    summary="Remove profile picture for current user (alias)",
+)
+def remove_avatar(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Removes current user's profile photo."""
+    current_user.profile_image = None
+    db.commit()
+    db.refresh(current_user)
     return UserOut.model_validate(current_user)
 
 

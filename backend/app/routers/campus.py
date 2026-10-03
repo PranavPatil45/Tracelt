@@ -289,3 +289,34 @@ def get_user_reconnected_items(
             )
 
     return reconnected_list
+
+
+PREDEFINED_CAMPUSES = [
+    "ABC University",
+    "KITCoEK",
+    "Example Institute of Technology",
+    "Northbridge State University",
+    "Lakeside Community College",
+]
+
+PREDEFINED_DEPARTMENTS = [
+    "Computer Engineering",
+    "Mechanical Engineering",
+    "Electronics",
+    "Civil Engineering",
+    "Science",
+    "Management",
+]
+
+
+@router.get("/campuses", response_model=List[str], summary="List predefined institution campuses")
+def get_predefined_campuses() -> List[str]:
+    """Returns verified campus directories for user profile selection."""
+    return PREDEFINED_CAMPUSES
+
+
+@router.get("/departments", response_model=List[str], summary="List predefined academic departments")
+def get_predefined_departments() -> List[str]:
+    """Returns verified departments for user profile selection."""
+    return PREDEFINED_DEPARTMENTS
+

@@ -77,6 +77,15 @@ def init_db():
             if columns and "role" not in columns:
                 conn.exec_driver_sql("ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'student' NOT NULL")
                 conn.commit()
+            if columns and "phone" not in columns:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN phone VARCHAR(50)")
+                conn.commit()
+            if columns and "bio" not in columns:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN bio VARCHAR(500)")
+                conn.commit()
+            if columns and "profile_image" not in columns:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN profile_image VARCHAR(500)")
+                conn.commit()
         except Exception:
             pass
 

@@ -32,3 +32,18 @@ def create_user(db: Session, user_in: UserRegister) -> User:
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+def update_user_profile(db: Session, user: User, profile_data: dict) -> User:
+    """
+    Updates permitted profile fields for the authenticated user.
+    Strictly filters against allowed profile fields.
+    """
+    allowed_fields = {"full_name", "phone", "bio", "campus", "department", "profile_image"}
+    for key, value in profile_data.items():
+        if key in allowed_fields:
+            setattr(user, key, value)
+    db.commit()
+    db.refresh(user)
+    return user
+

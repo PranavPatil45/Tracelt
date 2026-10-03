@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, computed_field
 
 
 class UserBase(BaseModel):
@@ -21,12 +21,29 @@ class UserLogin(BaseModel):
     remember: Optional[bool] = False
 
 
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    phone: Optional[str] = Field(None, max_length=50)
+    bio: Optional[str] = Field(None, max_length=500)
+    campus: Optional[str] = Field(None, min_length=1, max_length=255)
+    department: Optional[str] = Field(None, max_length=255)
+    profile_image: Optional[str] = Field(None, max_length=500)
+
+
 class UserOut(UserBase):
     id: int
     role: str = "student"
+    phone: Optional[str] = None
+    bio: Optional[str] = None
+    profile_image: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+    @computed_field
+    @property
+    def name(self) -> str:
+        return self.full_name
 
     class Config:
         from_attributes = True
