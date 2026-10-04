@@ -86,7 +86,21 @@ def init_db():
             if columns and "profile_image" not in columns:
                 conn.exec_driver_sql("ALTER TABLE users ADD COLUMN profile_image VARCHAR(500)")
                 conn.commit()
-        except Exception:
-            pass
+
+            # Matches table schema evolution for Gemini visual matching
+            match_result = conn.exec_driver_sql("PRAGMA table_info(matches)")
+            match_cols = [row[1] for row in match_result.fetchall()]
+            if match_cols:
+                if "visual_score" not in match_cols:
+                    conn.exec_driver_sql("ALTER TABLE matches ADD COLUMN visual_score INTEGER")
+                if "visual_verdict" not in match_cols:
+                    conn.exec_driver_sql("ALTER TABLE matches ADD COLUMN visual_verdict VARCHAR(50)")
+                if "visual_confidence" not in match_cols:
+                    conn.exec_driver_sql("ALTER TABLE matches ADD COLUMN visual_confidence FLOAT")
+                if "visual_reasons" not in match_cols:
+                    conn.exec_driver_sql("ALTER TABLE matches ADD COLUMN visual_reasons JSON")
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"Database migration check warning: {e}")
 
 

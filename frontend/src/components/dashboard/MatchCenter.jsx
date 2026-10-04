@@ -5,6 +5,7 @@ import {
   MapPin,
   Clock,
   ShieldCheck,
+  Eye,
 } from "lucide-react";
 import "./MatchCenter.css";
 
@@ -46,9 +47,35 @@ export default function MatchCenter({ match, onReviewMatch }) {
       <div className="match-card">
         {/* Match Score Badge */}
         <div className="match-card__score-header">
-          <div className="match-score-badge">
-            <Sparkles size={15} className="match-score-badge__icon" />
-            <span className="match-score-badge__value">{score}% MATCH</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div className="match-score-badge">
+              <Sparkles size={15} className="match-score-badge__icon" />
+              <span className="match-score-badge__value">{score}% MATCH</span>
+            </div>
+            {match.visual_score != null && (
+              <div
+                className={`match-visual-badge match-visual-badge--${match.visual_verdict || "default"}`}
+                title={
+                  match.visual_confidence != null
+                    ? `Gemini Visual Confidence: ${Math.round(match.visual_confidence * 100)}%`
+                    : "Gemini Visual Match"
+                }
+              >
+                <Eye size={13} />
+                <span>
+                  VISUAL: {match.visual_score}% (
+                  {(match.visual_verdict || "").replace("_", " ").toUpperCase()}
+                  )
+                </span>
+              </div>
+            )}
           </div>
           <span className="match-score-badge__caption">
             Spatial &amp; descriptive criteria verified
@@ -129,6 +156,29 @@ export default function MatchCenter({ match, onReviewMatch }) {
             ))}
           </ul>
         </div>
+
+        {/* Gemini AI Visual Evidence */}
+        {match.visual_score != null && (
+          <div className="match-center-visual-box">
+            <div className="match-center-visual-box__title">
+              <Sparkles size={13} />
+              <span>
+                Gemini AI Visual Evidence: {match.visual_score}% (
+                {(match.visual_verdict || "").replace("_", " ")})
+              </span>
+            </div>
+            {match.visual_reasons && match.visual_reasons.length > 0 && (
+              <ul className="match-center-visual-list">
+                {match.visual_reasons.map((vr, i) => (
+                  <li key={i} className="match-center-visual-item">
+                    <span>&bull;</span>
+                    <span>{vr}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* CTA Footer */}
         <div className="match-card__footer">

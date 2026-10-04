@@ -1,11 +1,16 @@
 import re
+import logging
 from datetime import datetime
 from typing import Optional, Tuple, List, Dict, Any
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.models.lost_item import LostItem
 from app.models.found_item import FoundItem
 from app.models.match import Match
+from app.services.image_matching_service import compare_item_images
+
+logger = logging.getLogger("tracelt.matching_service")
 
 # Configurable matching threshold (0 - 100)
 MATCH_THRESHOLD = 60
@@ -70,11 +75,12 @@ def calculate_location_score(lost_loc: str, found_loc: str) -> Tuple[int, Option
 def calculate_date_score(lost_date_str: str, found_date_str: str) -> Tuple[int, Optional[str]]:
     """
     Compare lost and found dates (20% weight).
+    Directional: A found item cannot be found before it was lost.
     Same day = 20 points.
     1 day apart = 15 points.
     2 days apart = 10 points.
     3 days apart = 5 points.
-    > 3 days apart = 0 points.
+    > 3 days apart or found date before lost date = 0 points.
     """
     try:
         d1 = datetime.strptime((lost_date_str or "").strip(), "%Y-%m-%d").date()
@@ -82,7 +88,11 @@ def calculate_date_score(lost_date_str: str, found_date_str: str) -> Tuple[int, 
     except (ValueError, TypeError):
         return 0, None
 
-    diff_days = abs((d1 - d2).days)
+    # Found date cannot precede lost date
+    if d2 < d1:
+        return 0, None
+
+    diff_days = (d2 - d1).days
 
     if diff_days == 0:
         return 20, "Reported on the same date"
@@ -262,10 +272,12 @@ def evaluate_and_save_match(
     lost_item: LostItem,
     found_item: FoundItem,
     threshold: int = MATCH_THRESHOLD,
+    visual_data: Optional[Dict[str, Any]] = None,
 ) -> Optional[Match]:
     """
     Evaluates eligibility and computes score.
     If total_score >= threshold, creates or updates the Match record idempotently.
+    Attaches visual comparison data if provided.
     """
     # 1. Eligibility: Same campus scope check
     if (lost_item.campus or "").strip().lower() != (found_item.campus or "").strip().lower():
@@ -304,6 +316,11 @@ def evaluate_and_save_match(
         existing_match.description_score = scores["description_score"]
         existing_match.total_score = total_score
         existing_match.reasons = scores["reasons"]
+        if visual_data is not None:
+            existing_match.visual_score = visual_data.get("visual_score")
+            existing_match.visual_verdict = visual_data.get("visual_verdict")
+            existing_match.visual_confidence = visual_data.get("visual_confidence")
+            existing_match.visual_reasons = visual_data.get("visual_reasons")
         db.commit()
         db.refresh(existing_match)
         return existing_match
@@ -319,6 +336,10 @@ def evaluate_and_save_match(
         total_score=total_score,
         reasons=scores["reasons"],
         status="POSSIBLE",
+        visual_score=visual_data.get("visual_score") if visual_data else None,
+        visual_verdict=visual_data.get("visual_verdict") if visual_data else None,
+        visual_confidence=visual_data.get("visual_confidence") if visual_data else None,
+        visual_reasons=visual_data.get("visual_reasons") if visual_data else None,
     )
     db.add(new_match)
     db.commit()
@@ -338,6 +359,8 @@ def find_matches_for_lost_item(
 ) -> List[Match]:
     """
     Finds and saves matches for a newly created or updated LostItem against all eligible FoundItems.
+    Applies Layer 1 deterministic matching, then gates Layer 2 Gemini visual comparison
+    for top candidates meeting VISUAL_CANDIDATE_THRESHOLD with images.
     """
     lost_item = db.query(LostItem).filter(LostItem.id == lost_item_id).first()
     if not lost_item or (lost_item.status or "").upper() != "ACTIVE":
@@ -355,10 +378,54 @@ def find_matches_for_lost_item(
         query = query.filter(FoundItem.campus == lost_item.campus)
 
     candidates = query.all()
-    created_or_updated_matches: List[Match] = []
+    if not candidates:
+        return []
 
+    # Layer 1: Deterministic scoring & candidate selection
+    scored_candidates: List[Tuple[FoundItem, Dict[str, Any]]] = []
     for found in candidates:
-        match = evaluate_and_save_match(db, lost_item, found, threshold=threshold)
+        scores = calculate_match_score(lost_item, found)
+        if scores["total_score"] >= threshold:
+            scored_candidates.append((found, scores))
+
+    if not scored_candidates:
+        return []
+
+    # Sort descending by deterministic score
+    scored_candidates.sort(key=lambda item: item[1]["total_score"], reverse=True)
+
+    # Layer 2: Gemini Visual Comparison candidate gating
+    visual_data_map: Dict[int, Optional[Dict[str, Any]]] = {}
+    visual_threshold = getattr(settings, "VISUAL_CANDIDATE_THRESHOLD", 50)
+    max_visual = getattr(settings, "MAX_VISUAL_COMPARISONS", 5)
+
+    if lost_item.image_url:
+        visual_eligible = [
+            (found, scores)
+            for found, scores in scored_candidates
+            if scores["total_score"] >= visual_threshold and bool(found.image_url)
+        ]
+
+        for found, _ in visual_eligible[:max_visual]:
+            try:
+                v_res = compare_item_images(lost_item=lost_item, found_item=found)
+                if v_res:
+                    visual_data_map[found.id] = v_res
+            except Exception as e:
+                logger.warning(
+                    f"Visual comparison error between Lost #{lost_item.id} and Found #{found.id}: {e}"
+                )
+
+    # Save / Upsert match records
+    created_or_updated_matches: List[Match] = []
+    for found, _ in scored_candidates:
+        match = evaluate_and_save_match(
+            db=db,
+            lost_item=lost_item,
+            found_item=found,
+            threshold=threshold,
+            visual_data=visual_data_map.get(found.id),
+        )
         if match:
             created_or_updated_matches.append(match)
 
@@ -372,6 +439,8 @@ def find_matches_for_found_item(
 ) -> List[Match]:
     """
     Finds and saves matches for a newly created or updated FoundItem against all eligible LostItems.
+    Applies Layer 1 deterministic matching, then gates Layer 2 Gemini visual comparison
+    for top candidates meeting VISUAL_CANDIDATE_THRESHOLD with images.
     """
     found_item = db.query(FoundItem).filter(FoundItem.id == found_item_id).first()
     if not found_item or (found_item.status or "").upper() not in ("AVAILABLE", "ACTIVE"):
@@ -389,10 +458,54 @@ def find_matches_for_found_item(
         query = query.filter(LostItem.campus == found_item.campus)
 
     candidates = query.all()
-    created_or_updated_matches: List[Match] = []
+    if not candidates:
+        return []
 
+    # Layer 1: Deterministic scoring & candidate selection
+    scored_candidates: List[Tuple[LostItem, Dict[str, Any]]] = []
     for lost in candidates:
-        match = evaluate_and_save_match(db, lost, found_item, threshold=threshold)
+        scores = calculate_match_score(lost, found_item)
+        if scores["total_score"] >= threshold:
+            scored_candidates.append((lost, scores))
+
+    if not scored_candidates:
+        return []
+
+    # Sort descending by deterministic score
+    scored_candidates.sort(key=lambda item: item[1]["total_score"], reverse=True)
+
+    # Layer 2: Gemini Visual Comparison candidate gating
+    visual_data_map: Dict[int, Optional[Dict[str, Any]]] = {}
+    visual_threshold = getattr(settings, "VISUAL_CANDIDATE_THRESHOLD", 50)
+    max_visual = getattr(settings, "MAX_VISUAL_COMPARISONS", 5)
+
+    if found_item.image_url:
+        visual_eligible = [
+            (lost, scores)
+            for lost, scores in scored_candidates
+            if scores["total_score"] >= visual_threshold and bool(lost.image_url)
+        ]
+
+        for lost, _ in visual_eligible[:max_visual]:
+            try:
+                v_res = compare_item_images(lost_item=lost, found_item=found_item)
+                if v_res:
+                    visual_data_map[lost.id] = v_res
+            except Exception as e:
+                logger.warning(
+                    f"Visual comparison error between Lost #{lost.id} and Found #{found_item.id}: {e}"
+                )
+
+    # Save / Upsert match records
+    created_or_updated_matches: List[Match] = []
+    for lost, _ in scored_candidates:
+        match = evaluate_and_save_match(
+            db=db,
+            lost_item=lost,
+            found_item=found_item,
+            threshold=threshold,
+            visual_data=visual_data_map.get(lost.id),
+        )
         if match:
             created_or_updated_matches.append(match)
 
@@ -409,20 +522,14 @@ def scan_campus_matches(
     Returns the count of created/updated matches.
     """
     lost_q = db.query(LostItem).filter(LostItem.status == "ACTIVE")
-    found_q = db.query(FoundItem).filter(FoundItem.status.in_(["AVAILABLE", "ACTIVE"]))
-
     if campus:
         lost_q = lost_q.filter(LostItem.campus == campus)
-        found_q = found_q.filter(FoundItem.campus == campus)
 
     lost_items = lost_q.all()
-    found_items = found_q.all()
-
     count = 0
+
     for lost in lost_items:
-        for found in found_items:
-            match = evaluate_and_save_match(db, lost, found, threshold=threshold)
-            if match:
-                count += 1
+        matches = find_matches_for_lost_item(db=db, lost_item_id=lost.id, threshold=threshold)
+        count += len(matches)
 
     return count

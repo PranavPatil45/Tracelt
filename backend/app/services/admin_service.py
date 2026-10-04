@@ -686,6 +686,10 @@ def get_admin_matches(
                 reasons=m.reasons or [],
                 status=m.status,
                 created_at=m.created_at,
+                visual_score=m.visual_score,
+                visual_verdict=m.visual_verdict,
+                visual_confidence=m.visual_confidence,
+                visual_reasons=m.visual_reasons,
             )
         )
 

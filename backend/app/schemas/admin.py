@@ -158,6 +158,10 @@ class AdminMatchItem(BaseModel):
     reasons: List[str]
     status: str
     created_at: datetime
+    visual_score: Optional[int] = None
+    visual_verdict: Optional[str] = None
+    visual_confidence: Optional[float] = None
+    visual_reasons: Optional[List[str]] = None
 
 
 class AdminMatchListResponse(BaseModel):

@@ -1,6 +1,16 @@
-import { useState, useEffect } from 'react'
-import { X, Sparkles, MapPin, Clock, ShieldCheck, Check, MessageSquare, ArrowRight } from 'lucide-react'
-import './MatchDetailModal.css'
+import { useState, useEffect } from "react";
+import {
+  X,
+  Sparkles,
+  MapPin,
+  Clock,
+  ShieldCheck,
+  Check,
+  MessageSquare,
+  ArrowRight,
+  Eye,
+} from "lucide-react";
+import "./MatchDetailModal.css";
 
 export default function MatchDetailModal({
   isOpen,
@@ -9,31 +19,33 @@ export default function MatchDetailModal({
   onConfirmRecovery,
   onOpenMessage,
 }) {
-  const [confirmed, setConfirmed] = useState(false)
+  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
-    setConfirmed(false)
-  }, [isOpen])
+    setConfirmed(false);
+  }, [isOpen]);
 
   // Close on Escape key
   useEffect(() => {
     function handleKeyDown(e) {
-      if (e.key === 'Escape' && isOpen) {
-        onClose()
+      if (e.key === "Escape" && isOpen) {
+        onClose();
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
-  if (!isOpen || !match) return null
+  if (!isOpen || !match) return null;
 
-  const { userReport, matchedItem, score, reasons } = match
+  const { userReport, matchedItem, score, reasons } = match;
+  const lostImg = match.lost_item?.image_url || userReport?.image_url;
+  const foundImg = match.found_item?.image_url || matchedItem?.image_url;
 
   function handleClaim() {
-    setConfirmed(true)
+    setConfirmed(true);
     if (onConfirmRecovery) {
-      onConfirmRecovery(match)
+      onConfirmRecovery(match);
     }
   }
 
@@ -47,9 +59,30 @@ export default function MatchDetailModal({
         aria-labelledby="match-modal-title"
       >
         <div className="match-modal__header">
-          <div className="match-modal__badge">
-            <Sparkles size={15} />
-            <span>High Confidence Match &bull; {score}%</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div className="match-modal__badge">
+              <Sparkles size={15} />
+              <span>Algorithm Score &bull; {score}%</span>
+            </div>
+            {match.visual_score != null && (
+              <div
+                className={`match-modal__visual-badge match-modal__visual-badge--${match.visual_verdict || "default"}`}
+              >
+                <Eye size={14} />
+                <span>
+                  Visual Match &bull; {match.visual_score}% (
+                  {(match.visual_verdict || "").replace("_", " ").toUpperCase()}
+                  )
+                </span>
+              </div>
+            )}
           </div>
 
           <button
@@ -76,7 +109,9 @@ export default function MatchDetailModal({
             </div>
             <h4>Verification Request Sent!</h4>
             <p>
-              The custody desk at <strong>{matchedItem.location}</strong> has been alerted. Please bring your institutional student ID card to claim your item.
+              The custody desk at <strong>{matchedItem.location}</strong> has
+              been alerted. Please bring your institutional student ID card to
+              claim your item.
             </p>
             <div className="pickup-pass">
               <span className="pickup-pass__label">CAMPUS CLAIM CODE</span>
@@ -96,6 +131,15 @@ export default function MatchDetailModal({
                   <span>YOUR REPORT</span>
                 </div>
                 <div className="col-body">
+                  {lostImg && (
+                    <div className="modal-item-img-wrap">
+                      <img
+                        src={lostImg}
+                        alt={userReport.title}
+                        className="modal-item-img"
+                      />
+                    </div>
+                  )}
                   <div className="item-title-row">
                     <span className="item-emoji">{userReport.icon}</span>
                     <h5 className="item-title">{userReport.title}</h5>
@@ -115,7 +159,9 @@ export default function MatchDetailModal({
                   {userReport.tags && (
                     <div className="item-tags">
                       {userReport.tags.map((t) => (
-                        <span key={t} className="item-tag">{t}</span>
+                        <span key={t} className="item-tag">
+                          {t}
+                        </span>
                       ))}
                     </div>
                   )}
@@ -128,6 +174,15 @@ export default function MatchDetailModal({
                   <span>FOUND ITEM IN CUSTODY</span>
                 </div>
                 <div className="col-body">
+                  {foundImg && (
+                    <div className="modal-item-img-wrap">
+                      <img
+                        src={foundImg}
+                        alt={matchedItem.title}
+                        className="modal-item-img"
+                      />
+                    </div>
+                  )}
                   <div className="item-title-row">
                     <span className="item-emoji">{matchedItem.icon}</span>
                     <h5 className="item-title">{matchedItem.title}</h5>
@@ -146,15 +201,68 @@ export default function MatchDetailModal({
                   </div>
                   <div className="item-field">
                     <label>Current Status</label>
-                    <span className="status-highlight">{matchedItem.status}</span>
+                    <span className="status-highlight">
+                      {matchedItem.status}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* AI Visual Evidence (Gemini) Section */}
+            {match.visual_score != null ? (
+              <div className="match-modal__visual-section">
+                <div className="visual-section-header">
+                  <div className="visual-section-title">
+                    <Sparkles size={15} />
+                    <span>Gemini AI Visual Forensic Comparison</span>
+                  </div>
+                  <div className="visual-section-metrics">
+                    <span
+                      className={`visual-pill visual-pill--${match.visual_verdict || "default"}`}
+                    >
+                      {(match.visual_verdict || "")
+                        .replace("_", " ")
+                        .toUpperCase()}
+                    </span>
+                    <span className="visual-metric">
+                      Visual Similarity: <strong>{match.visual_score}%</strong>
+                    </span>
+                    {match.visual_confidence != null && (
+                      <span className="visual-metric">
+                        Confidence:{" "}
+                        <strong>
+                          {Math.round(match.visual_confidence * 100)}%
+                        </strong>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {match.visual_reasons && match.visual_reasons.length > 0 && (
+                  <div className="visual-reasons-container">
+                    {match.visual_reasons.map((vr, i) => (
+                      <div key={i} className="visual-reason-item">
+                        <span className="visual-dot">&bull;</span>
+                        <span>{vr}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="match-modal__visual-skipped">
+                <span>
+                  Visual Comparison: Not available for this item pair
+                  (insufficient image data or score threshold).
+                </span>
+              </div>
+            )}
+
             {/* Checklist reasons */}
             <div className="match-modal__reasons">
-              <span className="reasons-heading">Algorithmic Correlation Points:</span>
+              <span className="reasons-heading">
+                Algorithmic Correlation Points:
+              </span>
               <div className="reasons-tags">
                 {reasons.map((r, i) => (
                   <span key={i} className="reason-pill">
@@ -168,7 +276,8 @@ export default function MatchDetailModal({
             <div className="match-modal__notice">
               <ShieldCheck size={16} className="notice-icon" />
               <span>
-                To prevent false claims, campus staff will verify your student ID and verify matching details during handover.
+                To prevent false claims, campus staff will verify your student
+                ID and verify matching details during handover.
               </span>
             </div>
 
@@ -195,5 +304,5 @@ export default function MatchDetailModal({
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Optional
 import json
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -7,7 +7,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Base backend directory: c:/Users/.../trace/backend
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 CANONICAL_DB_PATH = BACKEND_DIR / "tracelt.db"
+CANONICAL_ENV_FILE = BACKEND_DIR / ".env"
 DEFAULT_SQLITE_URL = f"sqlite:///{CANONICAL_DB_PATH.as_posix()}"
+
 
 
 class Settings(BaseSettings):
@@ -22,6 +24,12 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = DEFAULT_SQLITE_URL
+
+    # Gemini AI Visual Matching
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-3.1-flash-lite"
+    VISUAL_CANDIDATE_THRESHOLD: int = 50
+    MAX_VISUAL_COMPARISONS: int = 5
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
@@ -61,7 +69,7 @@ class Settings(BaseSettings):
         return v
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(str(CANONICAL_ENV_FILE), ".env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",

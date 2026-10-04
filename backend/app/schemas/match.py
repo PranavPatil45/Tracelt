@@ -35,6 +35,10 @@ class MatchResponse(BaseModel):
     status: str
     signals: MatchSignals
     reasons: List[str]
+    visual_score: Optional[int] = None
+    visual_verdict: Optional[str] = None
+    visual_confidence: Optional[float] = None
+    visual_reasons: Optional[List[str]] = None
     lost_item: Optional[MatchItemSummary] = None
     found_item: Optional[MatchItemSummary] = None
     created_at: datetime

@@ -1,130 +1,201 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext.jsx'
-import { fetchAdminMatches } from '../../api/admin.js'
-import AdminTable from '../../components/admin/AdminTable.jsx'
-import { Sparkles, Eye, X, Check, ArrowRight } from 'lucide-react'
-import './AdminPages.css'
+import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { fetchAdminMatches } from "../../api/admin.js";
+import AdminTable from "../../components/admin/AdminTable.jsx";
+import { Sparkles, Eye, X, Check, ArrowRight } from "lucide-react";
+import "./AdminPages.css";
 
 export default function AdminMatches() {
-  const { token, user: currentAdmin } = useAuth()
-  const [matches, setMatches] = useState([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState('ALL')
-  const [selectedMatch, setSelectedMatch] = useState(null)
+  const { token, user: currentAdmin } = useAuth();
+  const [matches, setMatches] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [selectedMatch, setSelectedMatch] = useState(null);
 
   const loadMatches = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const res = await fetchAdminMatches(token, {
         status: statusFilter,
         campus: currentAdmin?.campus,
         page,
         limit: 15,
-      })
-      setMatches(res.matches || [])
-      setTotal(res.total || 0)
+      });
+      setMatches(res.matches || []);
+      setTotal(res.total || 0);
     } catch (err) {
-      console.error('Failed to load matches:', err)
+      console.error("Failed to load matches:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [token, statusFilter, page, currentAdmin?.campus])
+  }, [token, statusFilter, page, currentAdmin?.campus]);
 
   useEffect(() => {
-    loadMatches()
-  }, [loadMatches])
+    loadMatches();
+  }, [loadMatches]);
 
   const columns = [
     {
-      key: 'match',
-      label: 'Matched Item Pair',
+      key: "match",
+      label: "Matched Item Pair",
       render: (m) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <div>
-            <span style={{ fontWeight: '600', color: 'var(--amber)', display: 'block' }}>
+            <span
+              style={{
+                fontWeight: "600",
+                color: "var(--amber)",
+                display: "block",
+              }}
+            >
               Lost: {m.lost_item_title}
             </span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>#{m.lost_item_id} &bull; {m.lost_item_category}</span>
+            <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+              #{m.lost_item_id} &bull; {m.lost_item_category}
+            </span>
           </div>
-          <ArrowRight size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          <ArrowRight
+            size={14}
+            style={{ color: "var(--text-muted)", flexShrink: 0 }}
+          />
           <div>
-            <span style={{ fontWeight: '600', color: 'var(--cyan)', display: 'block' }}>
+            <span
+              style={{
+                fontWeight: "600",
+                color: "var(--cyan)",
+                display: "block",
+              }}
+            >
               Found: {m.found_item_title}
             </span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>#{m.found_item_id} &bull; {m.found_item_category}</span>
+            <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+              #{m.found_item_id} &bull; {m.found_item_category}
+            </span>
           </div>
         </div>
       ),
     },
     {
-      key: 'score',
-      label: 'Match Confidence',
+      key: "score",
+      label: "Algo Match",
       render: (m) => {
-        let color = 'var(--cyan)'
-        if (m.total_score >= 80) color = '#22c55e'
-        else if (m.total_score < 60) color = 'var(--amber)'
+        let color = "var(--cyan)";
+        if (m.total_score >= 80) color = "#22c55e";
+        else if (m.total_score < 60) color = "var(--amber)";
 
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <span
               style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: '700',
-                fontSize: '1rem',
+                fontFamily: "var(--font-display)",
+                fontWeight: "700",
+                fontSize: "1rem",
                 color,
               }}
             >
               {m.total_score}%
             </span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>score</span>
           </div>
-        )
+        );
       },
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: "visual_score",
+      label: "Visual Similarity",
       render: (m) => {
-        let badgeClass = 'admin-badge--matched'
-        if (m.status === 'REVIEWED') badgeClass = 'admin-badge--active'
-        if (m.status === 'REJECTED') badgeClass = 'admin-badge--closed'
-        return <span className={`admin-badge ${badgeClass}`}>{m.status}</span>
+        if (m.visual_score == null) {
+          return (
+            <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+              Not analyzed
+            </span>
+          );
+        }
+        let color = "var(--cyan)";
+        if (m.visual_score >= 75) color = "#22c55e";
+        else if (m.visual_score < 40) color = "var(--amber)";
+
+        return (
+          <div>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontWeight: "700",
+                  fontSize: "0.95rem",
+                  color,
+                }}
+              >
+                {m.visual_score}%
+              </span>
+              <span
+                style={{
+                  fontSize: "0.72rem",
+                  textTransform: "uppercase",
+                  color: "var(--text-muted)",
+                  fontWeight: "600",
+                }}
+              >
+                {(m.visual_verdict || "").replace("_", " ")}
+              </span>
+            </div>
+            {m.visual_confidence != null && (
+              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                {Math.round(m.visual_confidence * 100)}% conf
+              </span>
+            )}
+          </div>
+        );
       },
     },
     {
-      key: 'created_at',
-      label: 'Identified At',
+      key: "status",
+      label: "Status",
+      render: (m) => {
+        let badgeClass = "admin-badge--matched";
+        if (m.status === "REVIEWED") badgeClass = "admin-badge--active";
+        if (m.status === "REJECTED") badgeClass = "admin-badge--closed";
+        return <span className={`admin-badge ${badgeClass}`}>{m.status}</span>;
+      },
+    },
+    {
+      key: "created_at",
+      label: "Identified At",
       render: (m) => (
-        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
           {new Date(m.created_at).toLocaleDateString()}
         </span>
       ),
     },
     {
-      key: 'actions',
-      label: 'Actions',
+      key: "actions",
+      label: "Actions",
       render: (m) => (
         <button
           onClick={() => setSelectedMatch(m)}
           className="admin-btn admin-btn-secondary"
-          style={{ padding: '0.35rem 0.65rem' }}
+          style={{ padding: "0.35rem 0.65rem" }}
           title="Inspect signal score breakdown"
         >
           <Eye size={14} /> Score Details
         </button>
       ),
     },
-  ]
+  ];
 
   return (
     <div>
       <div className="admin-page-header">
         <div className="admin-page-title">
           <h2>Match Intelligence Monitoring</h2>
-          <p>Real-time algorithmically identified potential matches between lost and found items.</p>
+          <p>
+            Real-time algorithmically identified potential matches between lost
+            and found items.
+          </p>
         </div>
       </div>
 
@@ -133,8 +204,8 @@ export default function AdminMatches() {
           <select
             value={statusFilter}
             onChange={(e) => {
-              setStatusFilter(e.target.value)
-              setPage(1)
+              setStatusFilter(e.target.value);
+              setPage(1);
             }}
             className="admin-select"
           >
@@ -159,44 +230,106 @@ export default function AdminMatches() {
 
       {/* Score Breakdown Modal */}
       {selectedMatch && (
-        <div className="admin-modal-overlay" onClick={() => setSelectedMatch(null)}>
+        <div
+          className="admin-modal-overlay"
+          onClick={() => setSelectedMatch(null)}
+        >
           <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-header">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Sparkles size={18} style={{ color: 'var(--violet)' }} />
-                Match #{selectedMatch.id} Breakdown ({selectedMatch.total_score}%)
+              <h3
+                style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+              >
+                <Sparkles size={18} style={{ color: "var(--violet)" }} />
+                Match #{selectedMatch.id} Breakdown ({selectedMatch.total_score}
+                %)
               </h3>
               <button
                 onClick={() => setSelectedMatch(null)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                }}
               >
                 <X size={20} />
               </button>
             </div>
 
             <div className="admin-modal-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.88rem' }}>
-                <div style={{ background: 'var(--bg-elevated-2)', padding: '0.85rem', borderRadius: 'var(--radius-sm)' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--amber)', textTransform: 'uppercase', fontWeight: '700' }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "1rem",
+                  fontSize: "0.88rem",
+                }}
+              >
+                <div
+                  style={{
+                    background: "var(--bg-elevated-2)",
+                    padding: "0.85rem",
+                    borderRadius: "var(--radius-sm)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--amber)",
+                      textTransform: "uppercase",
+                      fontWeight: "700",
+                    }}
+                  >
                     Lost Item Report
                   </span>
-                  <p style={{ fontWeight: '600', marginTop: '0.25rem' }}>{selectedMatch.lost_item_title}</p>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Category: {selectedMatch.lost_item_category}</span>
-                  <div style={{ marginTop: '0.5rem' }}>
-                    <Link to={`/lost-items/${selectedMatch.lost_item_id}`} style={{ color: 'var(--cyan)', fontSize: '0.82rem' }}>
+                  <p style={{ fontWeight: "600", marginTop: "0.25rem" }}>
+                    {selectedMatch.lost_item_title}
+                  </p>
+                  <span
+                    style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}
+                  >
+                    Category: {selectedMatch.lost_item_category}
+                  </span>
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <Link
+                      to={`/lost-items/${selectedMatch.lost_item_id}`}
+                      style={{ color: "var(--cyan)", fontSize: "0.82rem" }}
+                    >
                       Open Lost Details &rarr;
                     </Link>
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--bg-elevated-2)', padding: '0.85rem', borderRadius: 'var(--radius-sm)' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--cyan)', textTransform: 'uppercase', fontWeight: '700' }}>
+                <div
+                  style={{
+                    background: "var(--bg-elevated-2)",
+                    padding: "0.85rem",
+                    borderRadius: "var(--radius-sm)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--cyan)",
+                      textTransform: "uppercase",
+                      fontWeight: "700",
+                    }}
+                  >
                     Found Item Report
                   </span>
-                  <p style={{ fontWeight: '600', marginTop: '0.25rem' }}>{selectedMatch.found_item_title}</p>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Category: {selectedMatch.found_item_category}</span>
-                  <div style={{ marginTop: '0.5rem' }}>
-                    <Link to={`/found-items/${selectedMatch.found_item_id}`} style={{ color: 'var(--cyan)', fontSize: '0.82rem' }}>
+                  <p style={{ fontWeight: "600", marginTop: "0.25rem" }}>
+                    {selectedMatch.found_item_title}
+                  </p>
+                  <span
+                    style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}
+                  >
+                    Category: {selectedMatch.found_item_category}
+                  </span>
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <Link
+                      to={`/found-items/${selectedMatch.found_item_id}`}
+                      style={{ color: "var(--cyan)", fontSize: "0.82rem" }}
+                    >
                       Open Found Details &rarr;
                     </Link>
                   </div>
@@ -204,55 +337,314 @@ export default function AdminMatches() {
               </div>
 
               <div>
-                <h4 style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                <h4
+                  style={{
+                    fontSize: "0.88rem",
+                    color: "var(--text-secondary)",
+                    marginBottom: "0.75rem",
+                  }}
+                >
                   Signal Scores Breakdown
                 </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
-                  <div style={{ background: 'var(--bg-elevated-2)', padding: '0.6rem', borderRadius: 'var(--radius-sm)' }}>
-                    <span style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--cyan)' }}>{selectedMatch.category_score}/25</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Category</span>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(5, 1fr)",
+                    gap: "0.5rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      background: "var(--bg-elevated-2)",
+                      padding: "0.6rem",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: "700",
+                        color: "var(--cyan)",
+                      }}
+                    >
+                      {selectedMatch.category_score}/25
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--text-muted)",
+                        display: "block",
+                      }}
+                    >
+                      Category
+                    </span>
                   </div>
-                  <div style={{ background: 'var(--bg-elevated-2)', padding: '0.6rem', borderRadius: 'var(--radius-sm)' }}>
-                    <span style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--cyan)' }}>{selectedMatch.location_score}/25</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Location</span>
+                  <div
+                    style={{
+                      background: "var(--bg-elevated-2)",
+                      padding: "0.6rem",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: "700",
+                        color: "var(--cyan)",
+                      }}
+                    >
+                      {selectedMatch.location_score}/25
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--text-muted)",
+                        display: "block",
+                      }}
+                    >
+                      Location
+                    </span>
                   </div>
-                  <div style={{ background: 'var(--bg-elevated-2)', padding: '0.6rem', borderRadius: 'var(--radius-sm)' }}>
-                    <span style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--cyan)' }}>{selectedMatch.date_score}/20</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Date</span>
+                  <div
+                    style={{
+                      background: "var(--bg-elevated-2)",
+                      padding: "0.6rem",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: "700",
+                        color: "var(--cyan)",
+                      }}
+                    >
+                      {selectedMatch.date_score}/20
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--text-muted)",
+                        display: "block",
+                      }}
+                    >
+                      Date
+                    </span>
                   </div>
-                  <div style={{ background: 'var(--bg-elevated-2)', padding: '0.6rem', borderRadius: 'var(--radius-sm)' }}>
-                    <span style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--cyan)' }}>{selectedMatch.time_score}/10</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Time</span>
+                  <div
+                    style={{
+                      background: "var(--bg-elevated-2)",
+                      padding: "0.6rem",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: "700",
+                        color: "var(--cyan)",
+                      }}
+                    >
+                      {selectedMatch.time_score}/10
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--text-muted)",
+                        display: "block",
+                      }}
+                    >
+                      Time
+                    </span>
                   </div>
-                  <div style={{ background: 'var(--bg-elevated-2)', padding: '0.6rem', borderRadius: 'var(--radius-sm)' }}>
-                    <span style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--cyan)' }}>{selectedMatch.description_score}/20</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Text Sim</span>
+                  <div
+                    style={{
+                      background: "var(--bg-elevated-2)",
+                      padding: "0.6rem",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: "700",
+                        color: "var(--cyan)",
+                      }}
+                    >
+                      {selectedMatch.description_score}/20
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--text-muted)",
+                        display: "block",
+                      }}
+                    >
+                      Text Sim
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Reasons List */}
               <div>
-                <h4 style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                <h4
+                  style={{
+                    fontSize: "0.88rem",
+                    color: "var(--text-secondary)",
+                    marginBottom: "0.5rem",
+                  }}
+                >
                   Match Explanations
                 </h4>
                 {selectedMatch.reasons && selectedMatch.reasons.length > 0 ? (
-                  <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <ul
+                    style={{
+                      listStyle: "none",
+                      padding: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.4rem",
+                    }}
+                  >
                     {selectedMatch.reasons.map((r, i) => (
-                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                        <Check size={14} style={{ color: '#22c55e' }} />
+                      <li
+                        key={i}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        <Check size={14} style={{ color: "#22c55e" }} />
                         <span>{r}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No explicit explanation reasons generated.</p>
+                  <p
+                    style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}
+                  >
+                    No explicit explanation reasons generated.
+                  </p>
+                )}
+              </div>
+
+              {/* Gemini AI Visual Evidence */}
+              <div>
+                <h4
+                  style={{
+                    fontSize: "0.88rem",
+                    color: "var(--text-secondary)",
+                    marginBottom: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
+                  <Sparkles size={14} style={{ color: "var(--cyan)" }} />
+                  Gemini AI Visual Comparison
+                </h4>
+                {selectedMatch.visual_score != null ? (
+                  <div
+                    style={{
+                      background: "var(--bg-elevated-2)",
+                      padding: "0.85rem",
+                      borderRadius: "var(--radius-sm)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.8rem",
+                        marginBottom: "0.5rem",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "0.9rem",
+                          fontWeight: "700",
+                          color: "var(--cyan)",
+                        }}
+                      >
+                        Visual Score: {selectedMatch.visual_score}%
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          textTransform: "uppercase",
+                          background: "rgba(69, 214, 224, 0.15)",
+                          color: "var(--cyan)",
+                          padding: "2px 8px",
+                          borderRadius: "4px",
+                          fontWeight: "700",
+                        }}
+                      >
+                        {(selectedMatch.visual_verdict || "").replace("_", " ")}
+                      </span>
+                      {selectedMatch.visual_confidence != null && (
+                        <span
+                          style={{
+                            fontSize: "0.78rem",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          Confidence:{" "}
+                          {Math.round(selectedMatch.visual_confidence * 100)}%
+                        </span>
+                      )}
+                    </div>
+                    {selectedMatch.visual_reasons &&
+                      selectedMatch.visual_reasons.length > 0 && (
+                        <ul
+                          style={{
+                            listStyle: "none",
+                            padding: 0,
+                            margin: 0,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "0.35rem",
+                          }}
+                        >
+                          {selectedMatch.visual_reasons.map((vr, i) => (
+                            <li
+                              key={i}
+                              style={{
+                                fontSize: "0.82rem",
+                                color: "var(--text-secondary)",
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: "0.4rem",
+                              }}
+                            >
+                              <span style={{ color: "var(--cyan)" }}>
+                                &bull;
+                              </span>
+                              <span>{vr}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                  </div>
+                ) : (
+                  <p
+                    style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}
+                  >
+                    Visual comparison not executed for this candidate.
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="admin-modal-footer">
-              <button onClick={() => setSelectedMatch(null)} className="admin-btn admin-btn-secondary">
+              <button
+                onClick={() => setSelectedMatch(null)}
+                className="admin-btn admin-btn-secondary"
+              >
                 Close
               </button>
             </div>
@@ -260,5 +652,5 @@ export default function AdminMatches() {
         </div>
       )}
     </div>
-  )
+  );
 }

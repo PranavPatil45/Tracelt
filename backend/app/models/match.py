@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, UniqueConstraint, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, UniqueConstraint, JSON, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -36,6 +36,12 @@ class Match(Base):
 
     # Status: POSSIBLE, REVIEWED, REJECTED
     status = Column(String(50), nullable=False, default="POSSIBLE", index=True)
+
+    # Gemini Visual Comparison (Layer 2)
+    visual_score = Column(Integer, nullable=True)
+    visual_verdict = Column(String(50), nullable=True)
+    visual_confidence = Column(Float, nullable=True)
+    visual_reasons = Column(JSON, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
