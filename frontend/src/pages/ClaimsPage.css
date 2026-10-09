@@ -238,8 +238,8 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 100px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm, 6px);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -565,7 +565,7 @@
 .claims-empty-card {
   background: var(--bg-elevated, #10151f);
   border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
-  border-radius: var(--radius-lg, 18px);
+  border-radius: var(--radius-lg, 14px);
   padding: 56px 24px;
   text-align: center;
   display: flex;
@@ -575,7 +575,16 @@
 }
 
 .claims-empty-icon {
-  font-size: 40px;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-void, rgba(0, 0, 0, 0.3));
+  border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan, #06b6d4);
+  margin-bottom: 4px;
 }
 
 .claims-empty-title {
@@ -597,7 +606,7 @@
 .claim-skeleton {
   background: var(--bg-elevated, #10151f);
   border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
-  border-radius: 18px;
+  border-radius: var(--radius-lg, 14px);
   height: 220px;
   animation: match-shimmer 1.6s infinite ease-in-out;
   background: linear-gradient(90deg, #10151f 25%, #1e293b 50%, #10151f 75%);

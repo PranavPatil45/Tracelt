@@ -315,8 +315,8 @@
 .explore-empty-state {
   background: var(--bg-elevated, #10151f);
   border: 1px dashed var(--border-hair-strong, rgba(230, 236, 248, 0.14));
-  border-radius: var(--radius-lg, 20px);
-  padding: 64px 24px;
+  border-radius: var(--radius-md, 10px);
+  padding: 56px 24px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -326,16 +326,17 @@
   margin: 32px auto;
 }
 
-.explore-empty-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: rgba(6, 182, 212, 0.1);
+.explore-empty-icon,
+.explore-empty-icon-box {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-elevated-2, #151b27);
+  border: 1px solid var(--border-hair-strong, rgba(230, 236, 248, 0.14));
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--cyan);
-  font-size: 28px;
 }
 
 .explore-empty-title {

@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  Sparkles,
 } from 'lucide-react'
 import { formatTimeAgo } from '../../api/notifications.js'
 import { getItemImageUrl } from '../../utils/imageUrl.js'

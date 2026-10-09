@@ -148,7 +148,8 @@ export default function MessagesView({ user }) {
                         </span>
                       )}
                       <span className="thread-item-tag">
-                        📦 {item?.title || 'Report'}
+                        <Package size={12} style={{ display: 'inline', marginRight: '5px', verticalAlign: '-1px' }} />
+                        {item?.title || 'Report'}
                       </span>
                     </div>
                   </div>

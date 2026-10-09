@@ -3,17 +3,13 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import {
   Search,
   X,
-  PlusCircle,
-  Filter,
-  ArrowUpDown,
   Calendar,
   MapPin,
-  Tag,
   Loader2,
   AlertCircle,
-  Sparkles,
-  Compass,
   RefreshCw,
+  SearchX,
+  Building2,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import Sidebar from '../components/dashboard/Sidebar.jsx'
@@ -291,7 +287,7 @@ export default function ExplorePage() {
                     className={`explore-tab-btn ${activeType === 'lost' ? 'explore-tab-btn--active' : ''}`}
                     onClick={() => setActiveType('lost')}
                   >
-                    🟠 Lost Only
+                    Lost Items
                   </button>
                   <button
                     type="button"
@@ -300,7 +296,7 @@ export default function ExplorePage() {
                     className={`explore-tab-btn ${activeType === 'found' ? 'explore-tab-btn--active' : ''}`}
                     onClick={() => setActiveType('found')}
                   >
-                    🟢 Found Only
+                    Found Items
                   </button>
                 </div>
               </div>
@@ -422,8 +418,12 @@ export default function ExplorePage() {
             ) : items.length === 0 ? (
               /* Empty State */
               <div className="explore-empty-state">
-                <div className="explore-empty-icon">
-                  {isFiltersDirty ? '🔍' : '🏫'}
+                <div className="explore-empty-icon-box">
+                  {isFiltersDirty ? (
+                    <SearchX size={36} strokeWidth={1.6} />
+                  ) : (
+                    <Building2 size={36} strokeWidth={1.6} />
+                  )}
                 </div>
                 <h2 className="explore-empty-title">
                   {isFiltersDirty ? 'No items match your criteria' : `No reports yet on ${campusName}`}
@@ -445,10 +445,10 @@ export default function ExplorePage() {
                 ) : (
                   <div className="explore-empty-actions">
                     <Link to="/report-lost" className="btn-secondary">
-                      + Report Lost Item
+                      Report Lost Item
                     </Link>
                     <Link to="/report-found" className="btn-primary">
-                      + Report Found Item
+                      Report Found Item
                     </Link>
                   </div>
                 )}

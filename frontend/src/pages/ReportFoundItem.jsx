@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Sparkles,
   HeartHandshake,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'

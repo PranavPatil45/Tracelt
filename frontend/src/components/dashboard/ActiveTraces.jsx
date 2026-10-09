@@ -1,11 +1,5 @@
-import {
-  Radar,
-  Sparkles,
-  ArrowRight,
-  MapPin,
-  Clock,
-  AlertCircle,
-} from "lucide-react";
+import { ArrowRight, MapPin, Clock, PackageSearch } from "lucide-react";
+import ItemThumbnail from "./ItemThumbnail.jsx";
 import "./ActiveTraces.css";
 
 export default function ActiveTraces({
@@ -29,17 +23,19 @@ export default function ActiveTraces({
           className="btn btn-ghost section-action-btn"
           onClick={() => onOpenReportModal && onOpenReportModal("lost")}
         >
-          + New Trace
+          + Log Lost Item
         </button>
       </div>
 
       {traces.length === 0 ? (
         <div className="empty-state-card">
-          <div className="empty-state-card__icon">🎒</div>
+          <div className="empty-state-card__icon-box">
+            <PackageSearch size={32} strokeWidth={1.6} />
+          </div>
           <h4 className="empty-state-card__title">No active traces</h4>
           <p className="empty-state-card__desc">
-            Report a lost item and Tracelt will start looking for possible
-            matches across your campus.
+            You don&rsquo;t have any lost item searches in progress. Report a
+            lost item to start automated campus correlation.
           </p>
           <button
             type="button"
@@ -61,8 +57,11 @@ export default function ActiveTraces({
               >
                 <div className="trace-card__main">
                   <div className="trace-card__icon-box">
-                    <span className="trace-card__emoji">{trace.icon}</span>
-                    <span className="trace-card__radar-ring" />
+                    <ItemThumbnail
+                      src={trace.image_url || trace.imageUrl}
+                      alt={trace.title}
+                      fallbackIconSize={22}
+                    />
                   </div>
 
                   <div className="trace-card__content">
@@ -89,7 +88,6 @@ export default function ActiveTraces({
 
                     <div className="trace-card__status-bar">
                       <span className="status-pill status-pill--searching">
-                        <span className="radar-spinner" />
                         {trace.status}
                       </span>
                       <span className="trace-card__detail-text">
@@ -104,7 +102,6 @@ export default function ActiveTraces({
                   <div className="trace-match-banner">
                     <div className="trace-match-banner__info">
                       <div className="trace-match-banner__title">
-                        <Sparkles size={14} className="sparkle-icon" />
                         <span>Possible match detected</span>
                         <span className="match-percent-tag">
                           {trace.match.score}% match

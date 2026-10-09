@@ -122,19 +122,50 @@ export async function fetchActiveTraces(token) {
           item.status !== "RETURNED",
       );
 
-      return activeItems.map((item) => ({
-        id: `real-${item.id}`,
-        rawId: item.id,
-        title: item.title,
-        category: item.category,
-        lostLocation: item.location,
-        reportedTime: item.lost_date ? formatDate(item.lost_date) : "Recently",
-        status: item.status === "ACTIVE" ? "Searching" : item.status,
-        statusDetail: "Scanning campus reports for algorithmic correlation",
-        hasMatch: false,
-        match: null,
-        icon: item.image_url ? "📷" : "🎒",
-      }));
+      // Attempt to correlate active traces with identified matches
+      let matchesMap = {};
+      try {
+        const mRes = await fetch(`${API_BASE_URL}/matches`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (mRes.ok) {
+          const mData = await mRes.json();
+          (mData.matches || []).forEach((m) => {
+            if (m.lost_item_id && (!matchesMap[m.lost_item_id] || m.score > matchesMap[m.lost_item_id].score)) {
+              matchesMap[m.lost_item_id] = m;
+            }
+          });
+        }
+      } catch {
+        // Non-blocking match lookup
+      }
+
+      return activeItems.map((item) => {
+        const match = matchesMap[item.id];
+        return {
+          id: `real-${item.id}`,
+          rawId: item.id,
+          title: item.title,
+          category: item.category,
+          lostLocation: item.location,
+          reportedTime: item.lost_date ? formatDate(item.lost_date) : "Recently",
+          status: item.status === "ACTIVE" ? "Searching" : item.status,
+          statusDetail: match ? "Possible match identified on campus" : "Scanning campus reports for algorithmic correlation",
+          hasMatch: Boolean(match),
+          match: match
+            ? {
+                id: match.id,
+                score: match.score,
+                location: match.found_item?.location || "Campus",
+                foundTime: match.found_item?.date ? formatDate(match.found_item.date) : "Recently",
+                ...match,
+              }
+            : null,
+          icon: null,
+          image_url: item.image_url,
+          imageUrl: item.image_url,
+        };
+      });
     }
   } catch (err) {
     console.error("Error fetching active traces:", err);
@@ -176,7 +207,9 @@ export async function fetchPossibleMatch(token) {
               ? formatDate(topMatch.lost_item.date)
               : "Recently",
             time: topMatch.lost_item?.time || "Time N/A",
-            icon: "🎒",
+            icon: null,
+            image_url: topMatch.lost_item?.image_url,
+            imageUrl: topMatch.lost_item?.image_url,
           },
           matchedItem: {
             id: topMatch.found_item?.id,
@@ -187,7 +220,9 @@ export async function fetchPossibleMatch(token) {
               ? formatDate(topMatch.found_item.date)
               : "Recently",
             time: topMatch.found_item?.time || "Time N/A",
-            icon: "✨",
+            icon: null,
+            image_url: topMatch.found_item?.image_url,
+            imageUrl: topMatch.found_item?.image_url,
           },
           lost_item: topMatch.lost_item,
           found_item: topMatch.found_item,
@@ -219,6 +254,7 @@ export async function fetchCampusActivity(token, campus) {
       const items = await res.json();
       return items.map((item) => ({
         ...item,
+        imageUrl: item.image_url,
         timeAgo: item.created_at
           ? formatRelativeTime(item.created_at)
           : item.timeAgo || "Recently",
@@ -255,7 +291,9 @@ export async function fetchRecentReports(token) {
         reports.push({
           id: `lost-${item.id}`,
           item: item.title,
-          icon: item.image_url ? "📷" : "🎒",
+          icon: null,
+          image_url: item.image_url,
+          imageUrl: item.image_url,
           type: "Lost",
           location: item.location,
           date: item.lost_date
@@ -279,7 +317,9 @@ export async function fetchRecentReports(token) {
         reports.push({
           id: `found-${item.id}`,
           item: item.title,
-          icon: item.image_url ? "📷" : "📦",
+          icon: null,
+          image_url: item.image_url,
+          imageUrl: item.image_url,
           type: "Found",
           location: item.location,
           date: item.found_date
@@ -357,7 +397,11 @@ export async function fetchReconnectedItems(token) {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) {
-      return await res.json();
+      const recItems = await res.json();
+      return recItems.map((item) => ({
+        ...item,
+        imageUrl: item.image_url,
+      }));
     }
   } catch (err) {
     console.error("Error fetching reconnected items:", err);

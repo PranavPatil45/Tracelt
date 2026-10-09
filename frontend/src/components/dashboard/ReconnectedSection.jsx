@@ -1,4 +1,5 @@
-import { CheckCircle2, ArrowRight, Sparkles, MapPin } from 'lucide-react'
+import { CheckCircle2, ArrowRight } from 'lucide-react'
+import ItemThumbnail from './ItemThumbnail.jsx'
 import './ReconnectedSection.css'
 
 export default function ReconnectedSection({
@@ -10,16 +11,18 @@ export default function ReconnectedSection({
       <section className="reconnected-section" aria-label="Reconnected Items">
         <div className="section-title-row">
           <div>
-            <h3 className="section-title">Successfully Reconnected 🎉</h3>
+            <h3 className="section-title">Recently Reconnected Items</h3>
             <p className="section-subtitle">Items returned safely to their owners.</p>
           </div>
         </div>
 
         <div className="empty-state-card">
-          <div className="empty-state-card__icon">🤝</div>
+          <div className="empty-state-card__icon-box">
+            <CheckCircle2 size={28} strokeWidth={1.6} />
+          </div>
           <h4 className="empty-state-card__title">No recovered items yet</h4>
           <p className="empty-state-card__desc">
-            When a lost item report is matched and confirmed returned, it will be celebrated here.
+            When a lost item report is matched and confirmed returned, it will be recorded here.
           </p>
         </div>
       </section>
@@ -30,13 +33,9 @@ export default function ReconnectedSection({
     <section className="reconnected-section" aria-label="Reconnected Items">
       <div className="section-title-row">
         <div>
-          <div className="reconnected-badge">
-            <Sparkles size={13} />
-            <span>Success Stories</span>
-          </div>
-          <h3 className="section-title">Successfully Reconnected 🎉</h3>
+          <h3 className="section-title">Recently Reconnected Items</h3>
           <p className="section-subtitle">
-            Items safely restored through campus community synergy.
+            Items safely returned to verified owners across campus.
           </p>
         </div>
       </div>
@@ -46,7 +45,11 @@ export default function ReconnectedSection({
           <div key={item.id} className="reconnected-card">
             <div className="reconnected-card__header">
               <div className="reconnected-card__icon-box">
-                <span>{item.icon}</span>
+                <ItemThumbnail
+                  src={item.image_url || item.imageUrl}
+                  alt={item.title}
+                  fallbackIconSize={20}
+                />
               </div>
               <div className="reconnected-card__info">
                 <h4 className="reconnected-card__title">{item.title}</h4>

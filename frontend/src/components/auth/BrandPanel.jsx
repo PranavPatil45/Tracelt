@@ -1,36 +1,8 @@
 import { Link } from "react-router-dom";
-import {
-  Radar,
-  Target,
-  Handshake,
-  Search,
-  ClipboardList,
-  ShieldCheck,
-} from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import TraceltPoster from "./TraceltPoster";
 import "./BrandPanel.css";
 import LogoIcon from "./LogoIcon";
-const FEATURES = [
-  {
-    id: "report",
-    label: "Report",
-    text: "Tell us what you lost.",
-    Icon: ClipboardList,
-  },
-  {
-    id: "discover",
-    label: "Discover",
-    text: "Browse found items.",
-    Icon: Search,
-  },
-  { id: "match", label: "Match", text: "Find possible matches.", Icon: Target },
-  {
-    id: "reconnect",
-    label: "Reconnect",
-    text: "Get your belongings back.",
-    Icon: Handshake,
-  },
-];
 
 export default function BrandPanel() {
   return (
@@ -40,9 +12,7 @@ export default function BrandPanel() {
 
       <div className="brand-panel__content">
         <Link className="brand-panel__logo" to="/" aria-label="Tracelt home">
-          <span className="navbar__mark">
-            <Radar size={18} strokeWidth={2.2} />
-          </span>
+          <LogoIcon width={40} height={50} />
           <span className="navbar__word">Tracelt</span>
         </Link>
 
@@ -58,21 +28,6 @@ export default function BrandPanel() {
             what matters.
           </p>
         </div>
-
-        {/*  <ul className="brand-panel__features">
-          {FEATURES.map(({ id, label, text, Icon }) => (
-            <li key={id} className="brand-panel__feature">
-              <span className="brand-panel__feature-icon">
-                <Icon size={14} strokeWidth={2.2} />
-              </span>
-              <span className="brand-panel__feature-copy">
-                <span className="brand-panel__feature-label">{label}</span>
-                <span className="brand-panel__feature-text">{text}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-        */}
 
         <div className="brand-panel__poster">
           <TraceltPoster />

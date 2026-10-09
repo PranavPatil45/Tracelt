@@ -81,13 +81,13 @@ export default function ReportItemModal({
         description,
         status: isLost ? 'Searching' : 'Active',
         statusColor: isLost ? 'amber' : 'cyan',
-        icon: isLost ? '🎒' : '📦',
+        icon: null,
       }
 
       if (onSubmitReport) onSubmitReport(report)
       setSuccessMessage(
         isLost
-          ? 'Lost item report published! Our scanning engine is monitoring campus submissions.'
+          ? 'Lost item report published! Tracelt is actively correlating campus reports.'
           : 'Found item report published! Thank you for supporting the campus community.'
       )
 

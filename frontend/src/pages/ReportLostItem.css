@@ -34,9 +34,9 @@
 .report-form-card {
   background: var(--bg-elevated, #10151f);
   border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
-  border-radius: var(--radius-lg, 22px);
-  padding: 36px 40px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-lg, 14px);
+  padding: 32px 36px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
   position: relative;
   overflow: hidden;
 }
@@ -74,7 +74,6 @@
   height: 6px;
   border-radius: 50%;
   background: var(--cyan);
-  box-shadow: 0 0 8px var(--cyan);
 }
 
 .report-form-title {
@@ -275,8 +274,8 @@
 }
 
 .report-success-icon-wrap {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
@@ -284,7 +283,6 @@
   place-items: center;
   border: 1px solid rgba(16, 185, 129, 0.3);
   margin-bottom: 16px;
-  box-shadow: 0 0 24px rgba(16, 185, 129, 0.25);
 }
 
 .report-success-badge {
@@ -297,7 +295,7 @@
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.2);
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm, 6px);
   margin-bottom: 12px;
 }
 

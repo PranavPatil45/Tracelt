@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { ShieldCheck, X, CheckCircle2, AlertCircle, Sparkles, Loader2, ArrowRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ShieldCheck, X, CheckCircle2, AlertCircle, Info, GitCompare, Loader2, ArrowRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { submitClaim } from '../../api/claims.js'
 import './ClaimActionModal.css'
@@ -120,7 +120,7 @@ export default function ClaimActionModal({
             </p>
 
             <div className="claim-modal-explainer" style={{ width: '100%', marginBottom: '20px' }}>
-              <Sparkles size={18} className="claim-modal-explainer-icon" />
+              <Info size={18} className="claim-modal-explainer-icon" />
               <div>
                 <strong>Next Steps</strong>
                 <p>
@@ -154,7 +154,7 @@ export default function ClaimActionModal({
           <form onSubmit={handleSubmitClaim} className="claim-modal-body">
             {match && (
               <div className="claim-modal-match-banner">
-                <Sparkles size={16} />
+                <GitCompare size={16} />
                 <span>
                   Correlated Match: <strong>{lostTitle}</strong> ↔ <strong>{foundTitle}</strong> ({match.score}% match)
                 </span>

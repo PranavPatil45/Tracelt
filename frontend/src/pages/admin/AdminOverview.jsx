@@ -7,7 +7,8 @@ import {
   Users,
   Search,
   CheckCircle2,
-  Sparkles,
+  GitCompare,
+  Tag,
   FileCheck2,
   RotateCcw,
   Flag,
@@ -63,7 +64,7 @@ export default function AdminOverview() {
       case 'FOUND_ITEM_CREATED':
         return { icon: CheckCircle2, bg: 'rgba(69, 214, 224, 0.15)', color: 'var(--cyan)' }
       case 'MATCH_CREATED':
-        return { icon: Sparkles, bg: 'rgba(140, 123, 255, 0.15)', color: 'var(--violet)' }
+        return { icon: GitCompare, bg: 'rgba(140, 123, 255, 0.15)', color: 'var(--violet)' }
       case 'CLAIM_APPROVED':
         return { icon: FileCheck2, bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }
       case 'CLAIM_REJECTED':
@@ -154,7 +155,7 @@ export default function AdminOverview() {
           <div className="admin-stat-top">
             <span>Active Matches</span>
             <div className="admin-stat-icon" style={{ background: 'rgba(140, 123, 255, 0.12)', color: 'var(--violet)' }}>
-              <Sparkles size={18} />
+              <GitCompare size={18} />
             </div>
           </div>
           <span className="admin-stat-value">{stats ? stats.active_matches.toLocaleString() : '—'}</span>
@@ -226,7 +227,7 @@ export default function AdminOverview() {
         {/* Right Column: Category Distribution */}
         <div className="admin-card">
           <h3 className="admin-card__title">
-            <Sparkles size={18} style={{ color: 'var(--violet)' }} />
+            <Tag size={18} style={{ color: 'var(--violet)' }} />
             Most Reported Item Categories
           </h3>
 

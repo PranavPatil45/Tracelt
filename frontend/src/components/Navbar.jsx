@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, Radar, User as UserIcon } from "lucide-react";
+import { Menu, X, User as UserIcon } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import LogoIcon from "./auth/LogoIcon.jsx";
 import "./Navbar.css";
@@ -61,7 +61,7 @@ export default function Navbar() {
               <Link className="btn btn-ghost" to="/login">
                 Log In
               </Link>
-              <Link className="btn btn-primary" to="/login">
+              <Link className="btn btn-primary" to="/signup">
                 Get Started
               </Link>
             </>
@@ -116,7 +116,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   className="btn btn-primary"
-                  to="/login"
+                  to="/signup"
                   onClick={() => setOpen(false)}
                 >
                   Get Started

@@ -1,5 +1,5 @@
 import {
-  Sparkles,
+  GitCompare,
   Check,
   ArrowRight,
   MapPin,
@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Eye,
 } from "lucide-react";
+import ItemThumbnail from "./ItemThumbnail.jsx";
 import "./MatchCenter.css";
 
 export default function MatchCenter({ match, onReviewMatch }) {
@@ -20,10 +21,12 @@ export default function MatchCenter({ match, onReviewMatch }) {
         </div>
 
         <div className="empty-state-card">
-          <div className="empty-state-card__icon">✨</div>
-          <h4 className="empty-state-card__title">No Matches</h4>
+          <div className="empty-state-card__icon-box">
+            <GitCompare size={28} strokeWidth={1.6} />
+          </div>
+          <h4 className="empty-state-card__title">No Matches Detected</h4>
           <p className="empty-state-card__desc">
-            No possible matches yet. Tracelt is keeping an eye out.
+            No potential matches identified yet. The system automatically cross-references new lost and found reports.
           </p>
         </div>
       </section>
@@ -38,8 +41,7 @@ export default function MatchCenter({ match, onReviewMatch }) {
         <div>
           <h3 className="section-title">Possible Matches</h3>
           <p className="section-subtitle">
-            High-confidence correlation detected between your report and campus
-            finds.
+            High-confidence correlation detected between your report and campus finds.
           </p>
         </div>
       </div>
@@ -56,7 +58,7 @@ export default function MatchCenter({ match, onReviewMatch }) {
             }}
           >
             <div className="match-score-badge">
-              <Sparkles size={15} className="match-score-badge__icon" />
+              <GitCompare size={14} className="match-score-badge__icon" />
               <span className="match-score-badge__value">{score}% MATCH</span>
             </div>
             {match.visual_score != null && (
@@ -89,9 +91,15 @@ export default function MatchCenter({ match, onReviewMatch }) {
             <span className="comparison-side__label">YOUR LOST ITEM</span>
             <div className="comparison-side__content">
               <div className="comparison-side__icon-box">
-                <span className="comparison-side__emoji">
-                  {userReport.icon}
-                </span>
+                <ItemThumbnail
+                  src={
+                    userReport.image_url ||
+                    userReport.imageUrl ||
+                    match.lost_item?.image_url
+                  }
+                  alt={userReport.title}
+                  fallbackIconSize={22}
+                />
               </div>
               <div className="comparison-side__text">
                 <h4 className="comparison-side__title">{userReport.title}</h4>
@@ -123,9 +131,15 @@ export default function MatchCenter({ match, onReviewMatch }) {
             </span>
             <div className="comparison-side__content">
               <div className="comparison-side__icon-box comparison-side__icon-box--cyan">
-                <span className="comparison-side__emoji">
-                  {matchedItem.icon}
-                </span>
+                <ItemThumbnail
+                  src={
+                    matchedItem.image_url ||
+                    matchedItem.imageUrl ||
+                    match.found_item?.image_url
+                  }
+                  alt={matchedItem.title}
+                  fallbackIconSize={22}
+                />
               </div>
               <div className="comparison-side__text">
                 <h4 className="comparison-side__title">{matchedItem.title}</h4>
@@ -157,13 +171,13 @@ export default function MatchCenter({ match, onReviewMatch }) {
           </ul>
         </div>
 
-        {/* Gemini AI Visual Evidence */}
+        {/* Visual Match Analysis */}
         {match.visual_score != null && (
           <div className="match-center-visual-box">
             <div className="match-center-visual-box__title">
-              <Sparkles size={13} />
+              <Eye size={13} />
               <span>
-                Gemini AI Visual Evidence: {match.visual_score}% (
+                Visual Match Analysis: {match.visual_score}% (
                 {(match.visual_verdict || "").replace("_", " ")})
               </span>
             </div>

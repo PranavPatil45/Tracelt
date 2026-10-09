@@ -1,7 +1,7 @@
 :root {
   /* Color tokens */
   --bg-void: #080b11;
-  --bg-primary: #0b0f17;
+  --bg-primary: #070d18;
   --bg-elevated: #10151f;
   --bg-elevated-2: #151b27;
   --border-hair: rgba(230, 236, 248, 0.08);
@@ -20,15 +20,15 @@
   --grad-signal: linear-gradient(120deg, var(--cyan) 0%, var(--violet) 100%);
 
   /* Type */
-  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-display: "Roboto", "Inter", sans-serif;
   --font-body: "Inter", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
 
   /* Layout */
   --max-w: 1240px;
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 22px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
 }
 
 * {
@@ -69,17 +69,11 @@ body::before {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background:
-    radial-gradient(
-      60% 40% at 15% 0%,
-      rgba(140, 123, 255, 0.1),
-      transparent 60%
-    ),
-    radial-gradient(
-      50% 35% at 90% 10%,
-      rgba(69, 214, 224, 0.08),
-      transparent 60%
-    );
+  background: radial-gradient(
+    80% 50% at 50% 0%,
+    rgba(255, 255, 255, 0.02),
+    transparent 70%
+  );
 }
 
 img,
@@ -152,13 +146,12 @@ h4 {
   height: 6px;
   border-radius: 50%;
   background: var(--cyan);
-  box-shadow: 0 0 8px 1px var(--cyan);
 }
 
 .section {
   position: relative;
   z-index: 1;
-  padding: 120px 32px;
+  padding: 100px 32px;
 }
 
 .section-inner {
@@ -168,17 +161,17 @@ h4 {
 
 .section-head {
   max-width: 620px;
-  margin-bottom: 64px;
+  margin-bottom: 56px;
 }
 
 .section-head h2 {
-  font-size: clamp(28px, 3.6vw, 42px);
+  font-size: clamp(26px, 3.2vw, 38px);
   margin-top: 14px;
 }
 
 .section-head p {
-  margin-top: 16px;
-  font-size: 17px;
+  margin-top: 14px;
+  font-size: 16px;
   line-height: 1.6;
   color: var(--text-secondary);
 }
@@ -188,16 +181,16 @@ h4 {
   align-items: center;
   gap: 8px;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 15px;
-  padding: 13px 24px;
-  border-radius: 999px;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm, 6px);
   border: 1px solid transparent;
   transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    border-color 0.25s ease,
-    background 0.25s ease;
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
   white-space: nowrap;
 }
 
@@ -207,14 +200,12 @@ h4 {
 }
 
 .btn-primary {
-  background: var(--grad-signal);
+  background: var(--cyan);
   color: #06090f;
+  font-weight: 600;
 }
 
 .btn-primary:hover {
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 12px 30px -8px rgba(69, 214, 224, 0.45);
   transform: translateY(-1px);
 }
 

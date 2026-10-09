@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ArrowRight, Search, MapPin, ScanLine } from 'lucide-react'
 import './Hero.css'
 
@@ -6,7 +7,7 @@ export default function Hero() {
     <section className="hero">
       <div className="hero__inner">
         <div className="hero__copy">
-          <span className="eyebrow">Smart lost &amp; found network</span>
+          <span className="eyebrow">Campus Lost &amp; Found Utility</span>
           <h1 className="hero__heading">
             Lost something?
             <br />
@@ -14,15 +15,15 @@ export default function Hero() {
           </h1>
           <p className="hero__sub">
             Tracelt makes it easier to report lost belongings, discover found items,
-            and reconnect people with what matters to them.
+            and reconnect people with what matters to them across campus.
           </p>
           <div className="hero__ctas">
-            <a className="btn btn-primary" href="#get-started">
+            <Link className="btn btn-primary" to="/report-lost">
               Report a Lost Item <ArrowRight size={16} />
-            </a>
-            <a className="btn btn-secondary" href="#browse">
+            </Link>
+            <Link className="btn btn-secondary" to="/explore">
               Browse Found Items
-            </a>
+            </Link>
           </div>
           <div className="hero__trust">
             <ScanLine size={15} />
@@ -116,7 +117,7 @@ function TraceVisual() {
         <span className="trace-chip__dot" />
         <div>
           <span className="trace-chip__label">Possible match</span>
-          <span className="trace-chip__coord">2 miles away</span>
+          <span className="trace-chip__coord">North Quad</span>
         </div>
       </div>
 

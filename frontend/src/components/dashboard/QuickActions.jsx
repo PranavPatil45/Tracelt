@@ -10,7 +10,7 @@ export default function QuickActions({
     {
       id: 'lost',
       title: 'Report Lost Item',
-      desc: 'Tell us what you lost and let AI scan the campus.',
+      desc: 'Log details to search and correlate campus reports.',
       icon: Search,
       iconType: 'amber',
       onClick: onReportLost,
@@ -18,7 +18,7 @@ export default function QuickActions({
     {
       id: 'found',
       title: 'Report Found Item',
-      desc: 'Help someone reconnect with their belongings.',
+      desc: 'Help return found belongings to their verified owners.',
       icon: PlusCircle,
       iconType: 'cyan',
       onClick: onReportFound,
@@ -26,7 +26,7 @@ export default function QuickActions({
     {
       id: 'explore',
       title: 'Explore Items',
-      desc: 'Search active lost & found reports on your campus.',
+      desc: 'Search active lost & found reports across campus.',
       icon: Compass,
       iconType: 'violet',
       onClick: onExplore,
@@ -37,8 +37,8 @@ export default function QuickActions({
     <section className="quick-actions-section" aria-label="Quick Actions">
       <div className="section-title-row">
         <div>
-          <h3 className="section-title">What do you want to do?</h3>
-          <p className="section-subtitle">Jump straight into the core recovery workflow.</p>
+          <h3 className="section-title">Quick Actions</h3>
+          <p className="section-subtitle">Jump straight into reporting or discovering items.</p>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
-  Sparkles,
+  GitCompare,
   ArrowRight,
   MapPin,
   Calendar,
@@ -214,10 +214,6 @@ export default function MatchesPage() {
             {/* Header Title and Actions */}
             <div className="matches-page-header">
               <div>
-                <div className="matches-campus-pill">
-                  <Sparkles size={13} />
-                  <span>Algorithmic Correlation Engine</span>
-                </div>
                 <h1 className="matches-page-title">Match Center</h1>
                 <p className="matches-page-subtitle">
                   Possible relationships calculated between your lost and found
@@ -308,7 +304,9 @@ export default function MatchesPage() {
               </div>
             ) : matches.length === 0 ? (
               <div className="matches-empty-card">
-                <div className="matches-empty-icon">✨</div>
+                <div className="matches-empty-icon">
+                  <GitCompare size={28} />
+                </div>
                 <h3 className="matches-empty-title">No Possible Matches Yet</h3>
                 <p className="matches-empty-desc">
                   Tracelt&rsquo;s automated engine continuously compares newly
@@ -344,7 +342,6 @@ export default function MatchesPage() {
                           <div
                             className={`match-score-badge ${getScoreBadgeClass(m.score)}`}
                           >
-                            <Sparkles size={16} />
                             <span className="match-score-value">
                               {m.score}% MATCH
                             </span>
@@ -583,11 +580,11 @@ export default function MatchesPage() {
                         <div className="match-visual-card">
                           <div className="match-visual-card__header">
                             <div className="match-visual-card__title">
-                              <Sparkles
+                              <Eye
                                 size={14}
                                 className="visual-sparkle-icon"
                               />
-                              <span>Gemini AI Visual Comparison</span>
+                              <span>Visual Match Analysis</span>
                             </div>
                             <div className="match-visual-card__badges">
                               <span

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import './FinalCTA.css'
 
@@ -25,15 +26,15 @@ export default function FinalCTA() {
 
         <span className="eyebrow">Get started</span>
         <h2>Ready to find what you lost?</h2>
-        <p>Join Tracelt and make lost-and-found easier, smarter, and more connected.</p>
+        <p>Join Tracelt and make lost-and-found easier, transparent, and more connected across campus.</p>
 
         <div className="final-cta__actions">
-          <a className="btn btn-primary" href="#login">
+          <Link className="btn btn-primary" to="/signup">
             Get Started <ArrowRight size={16} />
-          </a>
-          <a className="btn btn-secondary" href="#browse">
+          </Link>
+          <Link className="btn btn-secondary" to="/explore">
             Browse Found Items
-          </a>
+          </Link>
         </div>
       </div>
     </section>

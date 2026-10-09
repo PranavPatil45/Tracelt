@@ -1,4 +1,5 @@
 import { ArrowRight, MapPin, Calendar, FileText } from 'lucide-react'
+import ItemThumbnail from './ItemThumbnail.jsx'
 import './RecentReportsTable.css'
 
 export default function RecentReportsTable({
@@ -28,7 +29,9 @@ export default function RecentReportsTable({
 
       {reports.length === 0 ? (
         <div className="empty-state-card">
-          <div className="empty-state-card__icon">📋</div>
+          <div className="empty-state-card__icon-box">
+            <FileText size={28} strokeWidth={1.6} />
+          </div>
           <h4 className="empty-state-card__title">No Recent Reports</h4>
           <p className="empty-state-card__desc">
             You haven&rsquo;t submitted any lost or found reports yet.
@@ -55,7 +58,13 @@ export default function RecentReportsTable({
                 <tr key={report.id}>
                   <td>
                     <div className="report-item-cell">
-                      <span className="report-item-cell__emoji">{report.icon}</span>
+                      <div className="report-item-cell__thumb-box">
+                        <ItemThumbnail
+                          src={report.image_url || report.imageUrl}
+                          alt={report.item}
+                          fallbackIconSize={18}
+                        />
+                      </div>
                       <span className="report-item-cell__name">{report.item}</span>
                     </div>
                   </td>
@@ -116,7 +125,13 @@ export default function RecentReportsTable({
               <div key={report.id} className="report-mobile-card">
                 <div className="report-mobile-card__header">
                   <div className="report-item-cell">
-                    <span className="report-item-cell__emoji">{report.icon}</span>
+                    <div className="report-item-cell__thumb-box">
+                      <ItemThumbnail
+                        src={report.image_url || report.imageUrl}
+                        alt={report.item}
+                        fallbackIconSize={18}
+                      />
+                    </div>
                     <span className="report-item-cell__name">{report.item}</span>
                   </div>
 

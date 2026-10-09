@@ -292,7 +292,9 @@ export default function ClaimsPage() {
               </div>
             ) : claims.length === 0 ? (
               <div className="claims-empty-card">
-                <div className="claims-empty-icon">🛡️</div>
+                <div className="claims-empty-icon">
+                  <ShieldCheck size={28} />
+                </div>
                 <h3 className="claims-empty-title">
                   {activeTab === 'submitted' ? 'No Claims Submitted Yet' : 'No Incoming Claims to Review'}
                 </h3>
@@ -629,17 +631,17 @@ export default function ClaimsPage() {
               <div className="review-modal-explanation">
                 {reviewAction === 'APPROVE' && (
                   <span>
-                    ✅ <strong>Approval Impact:</strong> The found item will be marked as <strong>CLAIMED</strong>, the owner&rsquo;s lost report will be marked <strong>RECOVERED</strong>, and this claim will be <strong>APPROVED</strong>.
+                    <strong>Approval Impact:</strong> The found item will be marked as <strong>CLAIMED</strong>, the owner&rsquo;s lost report will be marked <strong>RECOVERED</strong>, and this claim will be <strong>APPROVED</strong>.
                   </span>
                 )}
                 {reviewAction === 'UNDER_REVIEW' && (
                   <span>
-                    ℹ️ <strong>Under Review Impact:</strong> The claimant will be notified that you are cross-checking details. The item remains available.
+                    <strong>Under Review Impact:</strong> The claimant will be notified that you are cross-checking details. The item remains available.
                   </span>
                 )}
                 {reviewAction === 'REJECT' && (
                   <span>
-                    ⚠️ <strong>Rejection Impact:</strong> The claim will be marked <strong>REJECTED</strong>. The items will remain available for future matches.
+                    <strong>Rejection Impact:</strong> The claim will be marked <strong>REJECTED</strong>. The items will remain available for future matches.
                   </span>
                 )}
               </div>

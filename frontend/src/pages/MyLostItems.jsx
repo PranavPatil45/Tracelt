@@ -14,6 +14,7 @@ import {
   X,
   Loader2,
   Package,
+  PackageSearch,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import Sidebar from '../components/dashboard/Sidebar.jsx'
@@ -207,7 +208,9 @@ export default function MyLostItems() {
             </div>
           ) : items.length === 0 ? (
             <div className="empty-state-card">
-              <div className="empty-state-card__icon">🎒</div>
+              <div className="empty-state-card__icon-box">
+                <PackageSearch size={28} />
+              </div>
               <h3 className="empty-state-card__title">No Lost Items Reported</h3>
               <p className="empty-state-card__desc">
                 You haven&rsquo;t reported anything lost yet. If you misplace an item on campus, report it to begin automated trace matching.

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Search, PlusCircle, MapPin, Calendar, CheckCircle2, ArrowRight } from 'lucide-react'
+import { MapPin, Calendar, ArrowRight, PackageSearch, PackageCheck } from 'lucide-react'
+import ItemThumbnail from '../ItemThumbnail.jsx'
 import './Subviews.css'
 
 export default function MyItemsView({
@@ -29,7 +30,7 @@ export default function MyItemsView({
           className="btn btn-primary btn-sm"
           onClick={() => onOpenReportModal && onOpenReportModal(activeTab)}
         >
-          {activeTab === 'lost' ? '+ Report Lost Item' : '+ Report Found Item'}
+          {activeTab === 'lost' ? 'Report Lost Item' : 'Report Found Item'}
         </button>
       </div>
 
@@ -53,8 +54,12 @@ export default function MyItemsView({
 
       {items.length === 0 ? (
         <div className="empty-state-card">
-          <div className="empty-state-card__icon">
-            {activeTab === 'lost' ? '🎒' : '📦'}
+          <div className="empty-state-card__icon-box">
+            {activeTab === 'lost' ? (
+              <PackageSearch size={28} strokeWidth={1.6} />
+            ) : (
+              <PackageCheck size={28} strokeWidth={1.6} />
+            )}
           </div>
           <h4 className="empty-state-card__title">
             {activeTab === 'lost' ? 'No Lost Items' : 'No Found Items'}
@@ -77,7 +82,13 @@ export default function MyItemsView({
           {items.map((item) => (
             <div key={item.id} className="subview-card">
               <div className="subview-card__top">
-                <div className="subview-card__icon-box">{item.icon}</div>
+                <div className="subview-card__icon-box">
+                  <ItemThumbnail
+                    src={item.image_url || item.imageUrl}
+                    alt={item.item}
+                    fallbackIconSize={20}
+                  />
+                </div>
                 <span className={`report-status-badge report-status-badge--${item.statusColor}`}>
                   <span className="status-badge-dot" />
                   {item.status}

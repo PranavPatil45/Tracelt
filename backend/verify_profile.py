@@ -59,7 +59,7 @@ def run_tests():
     updated = update_profile(profile_in=update_data, current_user=user, db=db)
     assert updated.full_name == "Updated Name"
     assert updated.name == "Updated Name"
-    assert updated.phone == "+1 555-123-4567"
+    assert updated.phone == "9999888800"
     assert updated.bio == "Junior CS student interested in software engineering."
     assert updated.campus == "KITCoEK"
     assert updated.department == "Electronics"

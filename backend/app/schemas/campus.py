@@ -33,6 +33,7 @@ class ReconnectedItemResponse(BaseModel):
     recovery_id: Optional[int] = None
     lost_item_id: Optional[int] = None
     found_item_id: Optional[int] = None
+    image_url: Optional[str] = None
 
     class Config:
         from_attributes = True

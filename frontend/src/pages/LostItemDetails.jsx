@@ -182,7 +182,9 @@ export default function LostItemDetails() {
               </div>
             ) : error ? (
               <div className="empty-state-card">
-                <div className="empty-state-card__icon">⚠️</div>
+                <div className="empty-state-card__icon-box">
+                  <AlertCircle size={28} />
+                </div>
                 <h3 className="empty-state-card__title">Item Not Found</h3>
                 <p className="empty-state-card__desc">{error}</p>
                 <Link to="/my-lost-items" className="btn btn-primary">

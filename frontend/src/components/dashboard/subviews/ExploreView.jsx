@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Search, MapPin, Clock, Filter, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Search, MapPin, Clock, SearchX } from 'lucide-react'
+import ItemThumbnail from '../ItemThumbnail.jsx'
 import './Subviews.css'
 
 const CATEGORIES = ['All Categories', 'Bags', 'Electronics', 'ID Cards', 'Keys', 'Books', 'Other']
@@ -30,7 +31,7 @@ export default function ExploreView({
         <div>
           <h2 className="subview-title">Campus Lost &amp; Found Directory</h2>
           <p className="subview-subtitle">
-            Live public feed scoped exclusively to <strong>{campus?.trim() ? `📍 ${campus}` : 'your campus'}</strong>.
+            Live public feed scoped exclusively to <strong>{campus?.trim() ? campus : 'your campus'}</strong>.
           </p>
         </div>
 
@@ -39,7 +40,7 @@ export default function ExploreView({
           className="btn btn-primary btn-sm"
           onClick={() => onOpenReportModal && onOpenReportModal('lost')}
         >
-          + Report an Item
+          Report an Item
         </button>
       </div>
 
@@ -84,10 +85,12 @@ export default function ExploreView({
       {/* Items Grid */}
       {filteredItems.length === 0 ? (
         <div className="empty-state-card" style={{ marginTop: '24px' }}>
-          <div className="empty-state-card__icon">🔍</div>
+          <div className="empty-state-card__icon-box">
+            <SearchX size={28} strokeWidth={1.6} />
+          </div>
           <h4 className="empty-state-card__title">No items found matching criteria</h4>
           <p className="empty-state-card__desc">
-            Try adjusting your search terms or filters. New items are posted frequently by campus members.
+            Try adjusting your search terms or filters. New items are posted regularly by campus members.
           </p>
         </div>
       ) : (
@@ -102,7 +105,13 @@ export default function ExploreView({
                 onClick={() => onItemClick && onItemClick(item)}
               >
                 <div className="subview-card__top">
-                  <div className="subview-card__icon-box">{item.icon}</div>
+                  <div className="subview-card__icon-box">
+                    <ItemThumbnail
+                      src={item.image_url || item.imageUrl}
+                      alt={item.title}
+                      fallbackIconSize={20}
+                    />
+                  </div>
                   <span className={`campus-type-pill ${isFound ? 'campus-type-pill--found' : 'campus-type-pill--lost'}`}>
                     {isFound ? 'Found' : 'Lost'}
                   </span>

@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  Sparkles,
 } from 'lucide-react'
 import { getItemImageUrl } from '../../utils/imageUrl.js'
 

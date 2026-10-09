@@ -232,6 +232,8 @@ def get_user_reconnected_items(
         elif rec.claimant and rec.claimant.full_name:
             founder_text = f"Reconnected with {rec.claimant.full_name}"
 
+        rec_img = (rec.lost_item.image_url if rec.lost_item else None) or (rec.found_item.image_url if rec.found_item else None)
+
         reconnected_list.append(
             ReconnectedItemResponse(
                 id=f"rec-{rec.id}",
@@ -245,6 +247,7 @@ def get_user_reconnected_items(
                 recovery_id=rec.id,
                 lost_item_id=rec.lost_item_id,
                 found_item_id=rec.found_item_id,
+                image_url=rec_img,
             )
         )
 
@@ -265,6 +268,7 @@ def get_user_reconnected_items(
                     recovery_id=None,
                     lost_item_id=l.id,
                     found_item_id=None,
+                    image_url=l.image_url,
                 )
             )
 
@@ -285,6 +289,7 @@ def get_user_reconnected_items(
                     recovery_id=None,
                     lost_item_id=None,
                     found_item_id=f.id,
+                    image_url=f.image_url,
                 )
             )
 

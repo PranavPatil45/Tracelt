@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { fetchAdminMatches } from "../../api/admin.js";
 import AdminTable from "../../components/admin/AdminTable.jsx";
-import { Sparkles, Eye, X, Check, ArrowRight } from "lucide-react";
+import { GitCompare, Eye, X, Check, ArrowRight } from "lucide-react";
 import "./AdminPages.css";
 
 export default function AdminMatches() {
@@ -239,7 +239,7 @@ export default function AdminMatches() {
               <h3
                 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
               >
-                <Sparkles size={18} style={{ color: "var(--violet)" }} />
+                <GitCompare size={18} style={{ color: "var(--violet)" }} />
                 Match #{selectedMatch.id} Breakdown ({selectedMatch.total_score}
                 %)
               </h3>
@@ -544,8 +544,8 @@ export default function AdminMatches() {
                     gap: "0.4rem",
                   }}
                 >
-                  <Sparkles size={14} style={{ color: "var(--cyan)" }} />
-                  Gemini AI Visual Comparison
+                  <Eye size={14} style={{ color: "var(--cyan)" }} />
+                  Visual Match Analysis
                 </h4>
                 {selectedMatch.visual_score != null ? (
                   <div

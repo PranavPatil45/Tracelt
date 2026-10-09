@@ -64,7 +64,7 @@ export default function ItemCard({ item, currentUserId }) {
               isLost ? 'explore-type-badge--lost' : 'explore-type-badge--found'
             }`}
           >
-            {isLost ? '🟠 LOST' : '🟢 FOUND'}
+            {isLost ? 'LOST' : 'FOUND'}
           </span>
 
           {isOwner && (

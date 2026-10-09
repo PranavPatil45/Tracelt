@@ -21,28 +21,18 @@ export default function WelcomeSection({ user, onOpenReportModal }) {
   return (
     <section className="welcome-section">
       <div className="welcome-section__content">
-        <div className="welcome-section__eyebrow">
-          {campus && (
-            <span className="welcome-section__campus-tag">
-              <MapPin size={12} />
-              {campus}
-            </span>
-          )}
-        </div>
         <h2 className="welcome-section__title">
-          Good {greetingTime},{" "}
-          <span className="text-gradient">{firstName}</span>
+          Good {greetingTime}, {firstName}
         </h2>
         <p className="welcome-section__subtitle">
-          Here&rsquo;s what&rsquo;s happening with your campus lost &amp; found
-          activity.
+          Here&rsquo;s what&rsquo;s happening with your campus lost &amp; found activity.
         </p>
         {(campus || department) && (
           <div className="welcome-section__meta">
             {campus && (
               <span className="welcome-meta-item">
                 <MapPin size={13} className="meta-icon" />
-                📍 {campus}
+                {campus}
               </span>
             )}
             {department && (
@@ -61,8 +51,8 @@ export default function WelcomeSection({ user, onOpenReportModal }) {
           className="btn btn-primary welcome-section__btn-lost"
           onClick={() => onOpenReportModal && onOpenReportModal("lost")}
         >
-          <Search size={16} strokeWidth={2.4} />
-          <span>+ Report Lost Item</span>
+          <Search size={15} strokeWidth={2} />
+          <span>Report Lost Item</span>
         </button>
 
         <button
@@ -70,8 +60,8 @@ export default function WelcomeSection({ user, onOpenReportModal }) {
           className="btn btn-secondary welcome-section__btn-found"
           onClick={() => onOpenReportModal && onOpenReportModal("found")}
         >
-          <PlusCircle size={16} strokeWidth={2} />
-          <span>+ Report Found Item</span>
+          <PlusCircle size={15} strokeWidth={2} />
+          <span>Report Found Item</span>
         </button>
       </div>
     </section>

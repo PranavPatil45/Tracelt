@@ -226,15 +226,7 @@ export default function DashboardHeader({
                   </div>
                 ) : displayItems.length === 0 ? (
                   <div className="notif-dropdown__empty">
-                    <span
-                      style={{
-                        fontSize: "24px",
-                        display: "block",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      🔔
-                    </span>
+                    <Bell size={20} style={{ display: "block", margin: "0 auto 6px", opacity: 0.5 }} />
                     You&rsquo;re all caught up!
                   </div>
                 ) : (

@@ -13,7 +13,10 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
   cursor: pointer;
   position: relative;
   overflow: hidden;
@@ -23,15 +26,6 @@
   transform: translateY(-2px);
   background: var(--bg-elevated-2, #151b27);
   border-color: var(--border-hair-strong, rgba(230, 236, 248, 0.14));
-}
-
-.stat-card--highlight {
-  border-color: rgba(140, 123, 255, 0.3);
-  background: linear-gradient(135deg, var(--bg-elevated) 60%, rgba(140, 123, 255, 0.08));
-}
-
-.stat-card--highlight:hover {
-  border-color: var(--violet);
 }
 
 .stat-card__top {
@@ -109,7 +103,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 999px;
@@ -123,7 +117,6 @@
 }
 
 .stat-card__badge--amber {
-  background: rgba(240, 181, 99, 0.1);
   color: var(--amber);
 }
 .stat-card__badge--amber .stat-card__badge-dot {
@@ -131,7 +124,6 @@
 }
 
 .stat-card__badge--cyan {
-  background: rgba(69, 214, 224, 0.1);
   color: var(--cyan);
 }
 .stat-card__badge--cyan .stat-card__badge-dot {
@@ -139,16 +131,13 @@
 }
 
 .stat-card__badge--violet {
-  background: rgba(140, 123, 255, 0.14);
   color: var(--violet);
 }
 .stat-card__badge--violet .stat-card__badge-dot {
   background: var(--violet);
-  box-shadow: 0 0 6px var(--violet);
 }
 
 .stat-card__badge--green {
-  background: rgba(16, 185, 129, 0.1);
   color: #10b981;
 }
 .stat-card__badge--green .stat-card__badge-dot {

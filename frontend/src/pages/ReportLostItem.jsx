@@ -6,12 +6,9 @@ import {
   Calendar,
   Clock,
   MapPin,
-  Tag,
-  FileText,
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Sparkles,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext.jsx'
 import Sidebar from '../components/dashboard/Sidebar.jsx'
@@ -277,13 +274,13 @@ export default function ReportLostItem() {
                 </div>
 
                 <div className="report-success-badge">
-                  <Sparkles size={13} />
-                  <span>Report Published to Campus Pulse</span>
+                  <CheckCircle2 size={13} />
+                  <span>Report Published to Campus Registry</span>
                 </div>
 
                 <h1 className="report-success-title">Lost Item Reported</h1>
                 <p className="report-success-desc">
-                  Your report has been successfully added to Tracelt. Our matching engine is actively scanning
+                  Your report has been successfully added to Tracelt. Automated correlation is actively comparing
                   reports across <strong>{campusName}</strong>.
                 </p>
 

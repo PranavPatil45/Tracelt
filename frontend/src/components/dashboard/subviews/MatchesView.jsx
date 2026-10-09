@@ -1,4 +1,3 @@
-import { Sparkles } from 'lucide-react'
 import MatchCenter from '../MatchCenter.jsx'
 import './Subviews.css'
 
@@ -9,7 +8,7 @@ export default function MatchesView({ match, onReviewMatch }) {
         <div>
           <h2 className="subview-title">Match Center</h2>
           <p className="subview-subtitle">
-            All AI-correlated matches between your reports and verified campus finds.
+            Matches correlated between your reports and verified campus finds.
           </p>
         </div>
       </div>

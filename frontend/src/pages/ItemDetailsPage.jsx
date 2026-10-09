@@ -7,7 +7,7 @@ import {
   AlertCircle,
   Share2,
   Check,
-  Sparkles,
+  GitCompare,
   Layers,
   HeartHandshake,
   Loader2,
@@ -301,13 +301,13 @@ export default function ItemDetailsPage({ initialType }) {
                   <section className="item-match-engine-card" aria-labelledby="match-engine-title">
                     <div className="item-match-engine-header">
                       <div className="item-match-engine-title-wrap">
-                        <Sparkles size={16} className="item-match-engine-icon" />
+                        <GitCompare size={16} className="item-match-engine-icon" />
                         <h3 id="match-engine-title" className="item-match-engine-title">
                           Possible Matches {itemMatches.length > 0 ? `(${itemMatches.length})` : ''}
                         </h3>
                       </div>
                       <span className="item-match-engine-badge">
-                        {itemMatches.length > 0 ? 'MATCH DETECTED' : 'ENGINE ACTIVE'}
+                        {itemMatches.length > 0 ? 'MATCH DETECTED' : 'CORRELATION ACTIVE'}
                       </span>
                     </div>
 

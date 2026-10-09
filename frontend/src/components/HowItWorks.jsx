@@ -1,4 +1,4 @@
-import { FileText, SearchCheck, Sparkles, HandHeart } from 'lucide-react'
+import { FileText, SearchCheck, GitCompare, HandHeart } from 'lucide-react'
 import { useReveal } from '../hooks/useReveal'
 import './HowItWorks.css'
 
@@ -19,10 +19,10 @@ const STEPS = [
   },
   {
     n: '03',
-    icon: Sparkles,
+    icon: GitCompare,
     title: 'Match',
-    lede: 'Find a possible match.',
-    body: 'Tracelt surfaces likely matches between lost and found reports so nothing slips through.',
+    lede: 'Correlate campus reports.',
+    body: 'Tracelt continuously correlates lost and found reports by location, category, and timeframes so matches are surfaced quickly.',
   },
   {
     n: '04',

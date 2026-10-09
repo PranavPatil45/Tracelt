@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   X,
-  Sparkles,
+  GitCompare,
   MapPin,
   Clock,
   ShieldCheck,
@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Eye,
 } from "lucide-react";
+import ItemThumbnail from "./ItemThumbnail.jsx";
 import "./MatchDetailModal.css";
 
 export default function MatchDetailModal({
@@ -39,8 +40,8 @@ export default function MatchDetailModal({
   if (!isOpen || !match) return null;
 
   const { userReport, matchedItem, score, reasons } = match;
-  const lostImg = match.lost_item?.image_url || userReport?.image_url;
-  const foundImg = match.found_item?.image_url || matchedItem?.image_url;
+  const lostImg = match.lost_item?.image_url || userReport?.image_url || userReport?.imageUrl;
+  const foundImg = match.found_item?.image_url || matchedItem?.image_url || matchedItem?.imageUrl;
 
   function handleClaim() {
     setConfirmed(true);
@@ -68,8 +69,8 @@ export default function MatchDetailModal({
             }}
           >
             <div className="match-modal__badge">
-              <Sparkles size={15} />
-              <span>Algorithm Score &bull; {score}%</span>
+              <GitCompare size={14} />
+              <span>Correlation Score &bull; {score}%</span>
             </div>
             {match.visual_score != null && (
               <div
@@ -131,17 +132,14 @@ export default function MatchDetailModal({
                   <span>YOUR REPORT</span>
                 </div>
                 <div className="col-body">
-                  {lostImg && (
-                    <div className="modal-item-img-wrap">
-                      <img
-                        src={lostImg}
-                        alt={userReport.title}
-                        className="modal-item-img"
-                      />
-                    </div>
-                  )}
+                  <div className="modal-item-img-wrap">
+                    <ItemThumbnail
+                      src={lostImg}
+                      alt={userReport.title}
+                      fallbackIconSize={36}
+                    />
+                  </div>
                   <div className="item-title-row">
-                    <span className="item-emoji">{userReport.icon}</span>
                     <h5 className="item-title">{userReport.title}</h5>
                   </div>
                   <div className="item-field">
@@ -174,17 +172,14 @@ export default function MatchDetailModal({
                   <span>FOUND ITEM IN CUSTODY</span>
                 </div>
                 <div className="col-body">
-                  {foundImg && (
-                    <div className="modal-item-img-wrap">
-                      <img
-                        src={foundImg}
-                        alt={matchedItem.title}
-                        className="modal-item-img"
-                      />
-                    </div>
-                  )}
+                  <div className="modal-item-img-wrap">
+                    <ItemThumbnail
+                      src={foundImg}
+                      alt={matchedItem.title}
+                      fallbackIconSize={36}
+                    />
+                  </div>
                   <div className="item-title-row">
-                    <span className="item-emoji">{matchedItem.icon}</span>
                     <h5 className="item-title">{matchedItem.title}</h5>
                   </div>
                   <div className="item-field">
@@ -214,8 +209,8 @@ export default function MatchDetailModal({
               <div className="match-modal__visual-section">
                 <div className="visual-section-header">
                   <div className="visual-section-title">
-                    <Sparkles size={15} />
-                    <span>Gemini AI Visual Forensic Comparison</span>
+                    <Eye size={15} />
+                    <span>Visual Match Analysis</span>
                   </div>
                   <div className="visual-section-metrics">
                     <span

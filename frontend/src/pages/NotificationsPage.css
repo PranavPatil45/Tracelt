@@ -306,7 +306,7 @@
 .notif-empty-card {
   background: var(--bg-elevated, #10151f);
   border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
-  border-radius: var(--radius-lg, 18px);
+  border-radius: var(--radius-lg, 14px);
   padding: 60px 24px;
   text-align: center;
   display: flex;
@@ -316,7 +316,15 @@
 }
 
 .notif-empty-icon {
-  font-size: 42px;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-void, rgba(0, 0, 0, 0.3));
+  border: 1px solid var(--border-hair, rgba(230, 236, 248, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan, #06b6d4);
   margin-bottom: 4px;
 }
 

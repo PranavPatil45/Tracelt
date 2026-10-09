@@ -23,7 +23,7 @@ export const ACTIVE_TRACES = [
     lostLocation: 'Library (2nd Floor)',
     reportedTime: 'Today · 10:42 AM',
     status: 'Searching',
-    statusDetail: 'AI scanner evaluating campus reports',
+    statusDetail: 'Evaluating matching reports across campus',
     hasMatch: true,
     match: {
       location: 'Engineering Block',
@@ -31,7 +31,7 @@ export const ACTIVE_TRACES = [
       foundTime: '11:15 AM',
       description: 'Black backpack with laptop compartment found near Lab 302',
     },
-    icon: '🎒',
+    icon: null,
   },
   {
     id: 'trace-2',
@@ -40,10 +40,10 @@ export const ACTIVE_TRACES = [
     lostLocation: 'Canteen / Dining Hall',
     reportedTime: 'Today · 12:15 PM',
     status: 'Searching campus...',
-    statusDetail: 'Notifying campus members in Student Center & Canteen',
+    statusDetail: 'Checking reports in Student Center & Canteen',
     hasMatch: false,
     match: null,
-    icon: '🎧',
+    icon: null,
   },
   {
     id: 'trace-3',
@@ -52,10 +52,10 @@ export const ACTIVE_TRACES = [
     lostLocation: 'Sports Complex Gymnasium',
     reportedTime: 'Yesterday · 4:30 PM',
     status: 'Searching campus...',
-    statusDetail: 'Campus lost & found desk pinged',
+    statusDetail: 'Cross-referencing Sports Complex desk logs',
     hasMatch: false,
     match: null,
-    icon: '⌚',
+    icon: null,
   },
 ]
 
@@ -64,7 +64,7 @@ export const POSSIBLE_MATCH = {
   score: 94,
   userReport: {
     id: 'trace-1',
-    icon: '🎒',
+    icon: null,
     title: 'Black Backpack',
     category: 'Bags & Backpacks',
     location: 'Library (2nd Floor)',
@@ -74,7 +74,7 @@ export const POSSIBLE_MATCH = {
   },
   matchedItem: {
     id: 'found-842',
-    icon: '🎒',
+    icon: null,
     title: 'Black Backpack',
     category: 'Bags & Backpacks',
     location: 'Engineering Block (Lab 302)',
@@ -95,7 +95,7 @@ export const POSSIBLE_MATCH = {
 export const CAMPUS_ACTIVITY = [
   {
     id: 'act-1',
-    icon: '🎒',
+    icon: null,
     title: 'Black Backpack',
     type: 'found',
     location: 'Engineering Block',
@@ -104,7 +104,7 @@ export const CAMPUS_ACTIVITY = [
   },
   {
     id: 'act-2',
-    icon: '💳',
+    icon: null,
     title: 'Student ID Card',
     type: 'found',
     location: 'Library',
@@ -113,7 +113,7 @@ export const CAMPUS_ACTIVITY = [
   },
   {
     id: 'act-3',
-    icon: '🎧',
+    icon: null,
     title: 'Wireless Earbuds',
     type: 'lost',
     location: 'Canteen',
@@ -122,7 +122,7 @@ export const CAMPUS_ACTIVITY = [
   },
   {
     id: 'act-4',
-    icon: '📱',
+    icon: null,
     title: 'Blue iPhone 13',
     type: 'lost',
     location: 'Science Quad',
@@ -131,7 +131,7 @@ export const CAMPUS_ACTIVITY = [
   },
   {
     id: 'act-5',
-    icon: '🗝️',
+    icon: null,
     title: 'Dorm Key Ring',
     type: 'found',
     location: 'Student Center',
@@ -140,7 +140,7 @@ export const CAMPUS_ACTIVITY = [
   },
   {
     id: 'act-6',
-    icon: '💻',
+    icon: null,
     title: 'Lenovo 65W USB-C Charger',
     type: 'found',
     location: 'Architecture Studio',
@@ -153,7 +153,7 @@ export const RECENT_REPORTS = [
   {
     id: 'rep-1',
     item: 'Black Backpack',
-    icon: '🎒',
+    icon: null,
     type: 'Lost',
     location: 'Library (2nd Floor)',
     date: 'Today',
@@ -163,7 +163,7 @@ export const RECENT_REPORTS = [
   {
     id: 'rep-2',
     item: 'Wireless Earbuds',
-    icon: '🎧',
+    icon: null,
     type: 'Lost',
     location: 'Canteen',
     date: 'Today',
@@ -173,7 +173,7 @@ export const RECENT_REPORTS = [
   {
     id: 'rep-3',
     item: 'Stainless Water Bottle',
-    icon: '🍶',
+    icon: null,
     type: 'Found',
     location: 'Sports Ground',
     date: '3d ago',
@@ -183,7 +183,7 @@ export const RECENT_REPORTS = [
   {
     id: 'rep-4',
     item: 'Casio Scientific Calculator',
-    icon: '🔢',
+    icon: null,
     type: 'Found',
     location: 'Math Lecture Hall',
     date: '5d ago',
@@ -193,7 +193,7 @@ export const RECENT_REPORTS = [
   {
     id: 'rep-5',
     item: 'Blue Umbrella',
-    icon: '☂️',
+    icon: null,
     type: 'Lost',
     location: 'North Gate',
     date: '1w ago',
@@ -235,7 +235,7 @@ export const NOTIFICATIONS = [
 export const RECONNECTED_ITEMS = [
   {
     id: 'rec-1',
-    icon: '🎧',
+    icon: null,
     title: 'Wireless Earbuds',
     lostLocation: 'Canteen',
     matchedLocation: 'Student Center',
@@ -245,7 +245,7 @@ export const RECONNECTED_ITEMS = [
   },
   {
     id: 'rec-2',
-    icon: '🔢',
+    icon: null,
     title: 'Casio Scientific Calculator',
     lostLocation: 'Math Lecture Hall',
     matchedLocation: 'Academic Affairs Office',

@@ -10,7 +10,6 @@ import {
   Calendar,
   ExternalLink,
   ChevronRight,
-  Sparkles,
   ArrowRight,
   AlertCircle,
   RefreshCw,

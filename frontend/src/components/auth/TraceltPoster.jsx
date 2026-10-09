@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import {
   FileSearch,
-  BrainCircuit,
+  GitCompare,
   Bell,
   ShieldCheck,
   Heart,
@@ -17,9 +17,9 @@ const FEATURES = [
   },
   {
     id: "match",
-    icon: BrainCircuit,
+    icon: GitCompare,
     label: "MATCH",
-    description: "AI-powered matching finds possible matches.",
+    description: "Automated correlation identifies matching reports.",
   },
   {
     id: "notify",
@@ -35,62 +35,6 @@ const FEATURES = [
   },
 ];
 
-function TraceltLogo() {
-  return (
-    <svg
-      className="tp-logo-mark"
-      width="120"
-      height="120"
-      viewBox="0 0 120 120"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      role="img"
-      aria-label="Tracelt logo"
-    >
-      <path
-        d="M60 8C36 8 18 26 18 49c0 30 42 63 42 63s42-33 42-63C102 26 84 8 60 8Z"
-        fill="url(#tp-pin-fill)"
-      />
-      <path
-        d="M60 20C40 20 28 34 28 49c0 21 32 47 32 47s32-26 32-47C92 34 80 20 60 20Z"
-        fill="none"
-        stroke="var(--accent)"
-        strokeWidth="4.5"
-      />
-      <rect x="52" y="34" width="10" height="28" rx="2" fill="var(--text)" />
-      <circle
-        cx="70"
-        cy="66"
-        r="15"
-        fill="var(--bg)"
-        stroke="var(--text)"
-        strokeWidth="5"
-      />
-      <line
-        x1="80.5"
-        y1="76.5"
-        x2="90"
-        y2="86"
-        stroke="var(--text)"
-        strokeWidth="5.5"
-        strokeLinecap="round"
-      />
-      <defs>
-        <linearGradient
-          id="tp-pin-fill"
-          x1="18"
-          y1="8"
-          x2="102"
-          y2="112"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0" stopColor="#0b2e52" />
-          <stop offset="1" stopColor="#061426" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
 
 export default function TraceltPoster() {
   return (

@@ -15,7 +15,7 @@ import {
   Loader2,
   ChevronDown,
   Building2,
-  Sparkles,
+  Check,
   Info,
   X,
 } from "lucide-react";
@@ -946,7 +946,7 @@ export default function ProfileView({ user: propUser }) {
                   </>
                 ) : (
                   <>
-                    <Sparkles size={15} />
+                    <Check size={16} />
                     <span>Save Changes</span>
                   </>
                 )}

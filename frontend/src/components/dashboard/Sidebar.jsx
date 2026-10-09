@@ -9,7 +9,7 @@ import {
   Compass,
   Search,
   CheckCircle2,
-  Sparkles,
+  GitCompare,
   ShieldCheck,
   Shield,
   MessageSquare,
@@ -133,7 +133,7 @@ export default function Sidebar({
     {
       id: "matches",
       label: "Matches",
-      icon: Sparkles,
+      icon: GitCompare,
       path: "/matches",
       badge: matchesCount > 0 ? String(matchesCount) : undefined,
       highlightBadge: true,

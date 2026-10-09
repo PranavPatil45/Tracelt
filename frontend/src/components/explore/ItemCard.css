@@ -12,9 +12,9 @@
 }
 
 .explore-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(230, 236, 248, 0.16);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
+  transform: translateY(-2px);
+  border-color: rgba(230, 236, 248, 0.2);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
 .explore-card--lost:hover {
@@ -42,11 +42,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease;
 }
 
 .explore-card:hover .explore-card__img {
-  transform: scale(1.04);
+  transform: scale(1.02);
 }
 
 .explore-card__placeholder {
@@ -83,21 +83,20 @@
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 100px;
-  backdrop-filter: blur(10px);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm, 6px);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .explore-type-badge--lost {
-  background: rgba(245, 158, 11, 0.22);
+  background: rgba(245, 158, 11, 0.2);
   border: 1px solid rgba(245, 158, 11, 0.45);
   color: #fbbf24;
 }
 
 .explore-type-badge--found {
-  background: rgba(16, 185, 129, 0.22);
+  background: rgba(16, 185, 129, 0.2);
   border: 1px solid rgba(16, 185, 129, 0.45);
   color: #34d399;
 }
@@ -107,11 +106,10 @@
   font-size: 10.5px;
   font-weight: 600;
   padding: 3px 8px;
-  border-radius: 100px;
-  background: rgba(168, 85, 247, 0.25);
+  border-radius: var(--radius-sm, 6px);
+  background: rgba(168, 85, 247, 0.22);
   border: 1px solid rgba(168, 85, 247, 0.45);
   color: #c084fc;
-  backdrop-filter: blur(10px);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-left: auto;
@@ -200,41 +198,35 @@
 }
 
 .explore-card__status-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--text-secondary);
 }
 
 .explore-card__status-dot--active {
   background: #f59e0b;
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
 }
 
 .explore-card__status-dot--available {
   background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
 }
 
 .explore-card__status-dot--matched {
   background: #3b82f6;
-  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
 }
 
 .explore-card__status-dot--claimed {
   background: #a855f7;
-  box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
 }
 
 .explore-card__status-dot--recovered,
 .explore-card__status-dot--returned {
   background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
 }
 
 .explore-card__status-dot--closed {
   background: #64748b;
-  box-shadow: 0 0 6px rgba(100, 116, 139, 0.6);
 }
 
 .explore-card__btn {

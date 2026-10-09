@@ -1,4 +1,4 @@
-import { Target, MessageSquare, CheckCircle2, ArrowRight } from 'lucide-react'
+import { Target, MessageSquare, CheckCircle2, ArrowRight, Bell } from 'lucide-react'
 import './NotificationsPreview.css'
 
 export default function NotificationsPreview({
@@ -39,7 +39,9 @@ export default function NotificationsPreview({
 
       {notifications.length === 0 ? (
         <div className="empty-state-card">
-          <div className="empty-state-card__icon">🔔</div>
+          <div className="empty-state-card__icon-box">
+            <Bell size={26} strokeWidth={1.6} />
+          </div>
           <h4 className="empty-state-card__title">No Notifications</h4>
           <p className="empty-state-card__desc">You&rsquo;re all caught up.</p>
         </div>

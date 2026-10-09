@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   Bell,
-  Sparkles,
+  GitCompare,
   Search,
   FileText,
   CheckCircle2,
@@ -129,7 +129,7 @@ export default function NotificationsPage() {
       case 'MATCH_FOUND':
         return (
           <div className="notif-icon-box notif-icon-box--match">
-            <Sparkles size={20} />
+            <GitCompare size={20} />
           </div>
         )
       case 'CLAIM_SUBMITTED':
@@ -307,7 +307,9 @@ export default function NotificationsPage() {
               </div>
             ) : notifications.length === 0 ? (
               <div className="notif-empty-card">
-                <div className="notif-empty-icon">🔔</div>
+                <div className="notif-empty-icon">
+                  <Bell size={28} />
+                </div>
                 <h3 className="notif-empty-title">You&rsquo;re All Caught Up</h3>
                 <p className="notif-empty-desc">
                   Important updates about your lost and found campus reports, match correlations, and ownership claims will appear here.
