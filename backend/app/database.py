@@ -86,6 +86,16 @@ def init_db():
             if columns and "profile_image" not in columns:
                 conn.exec_driver_sql("ALTER TABLE users ADD COLUMN profile_image VARCHAR(500)")
                 conn.commit()
+            if columns and "google_sub" not in columns:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN google_sub VARCHAR(255)")
+                conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub ON users(google_sub)")
+                conn.commit()
+            if columns and "auth_provider" not in columns:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(50) DEFAULT 'email' NOT NULL")
+                conn.commit()
+            if columns and "email_verified" not in columns:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0 NOT NULL")
+                conn.commit()
 
             # Matches table schema evolution for Gemini visual matching
             match_result = conn.exec_driver_sql("PRAGMA table_info(matches)")

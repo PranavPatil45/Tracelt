@@ -23,8 +23,20 @@ from app.schemas.auth import (
     Token,
     UserDashboardStats,
     UserProfileUpdate,
+    GoogleAuthRequest,
+    GoogleLinkPasswordRequest,
+    GoogleLinkRequest,
 )
-from app.crud.user import get_user_by_email, create_user, update_user_profile
+from app.crud.user import (
+    get_user_by_email,
+    get_user_by_google_sub,
+    create_user,
+    create_google_user,
+    link_google_account,
+    unlink_google_account,
+    update_user_profile,
+)
+from app.services.google_auth_service import verify_google_credential
 from app.core.security import verify_password, create_access_token
 from app.core.deps import get_current_user
 from app.core.file_storage import UPLOADS_DIR
@@ -76,7 +88,21 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)) -> Any:
     Returns HTTP 401 if credentials do not match.
     """
     user = get_user_by_email(db, email=login_data.email)
-    if not user or not verify_password(login_data.password, user.hashed_password):
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user.has_usable_password:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This account is registered with Google Sign-In. Please sign in using Google.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -115,7 +141,7 @@ def login_for_access_token(
     Username field corresponds to email.
     """
     user = get_user_by_email(db, email=form_data.username)
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not user.has_usable_password or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -124,6 +150,199 @@ def login_for_access_token(
 
     access_token = create_access_token(subject=user.id)
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post(
+    "/auth/google",
+    response_model=Token,
+    status_code=status.HTTP_200_OK,
+    summary="Authenticate with Google Identity Services (Sign-In & Sign-Up)",
+)
+def google_auth(
+    auth_data: GoogleAuthRequest,
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Verifies the Google ID token and authenticates the user:
+    - Case A: New Google user -> creates account with default 'student' role.
+    - Case B: Returning Google-linked user -> signs user in.
+    - Case C: Existing email/password user -> raises 409 Conflict (ACCOUNT_LINKING_REQUIRED).
+    Returns standard JWT access token and user profile.
+    """
+    claims = verify_google_credential(auth_data.credential)
+    sub = claims["sub"]
+    email = claims["email"]
+
+    # Case B: Google sub is already linked
+    existing_user_by_sub = get_user_by_google_sub(db, google_sub=sub)
+    if existing_user_by_sub:
+        if not existing_user_by_sub.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This account has been deactivated.",
+            )
+        access_token = create_access_token(subject=existing_user_by_sub.id)
+        return Token(
+            access_token=access_token,
+            token_type="bearer",
+            user=UserOut.model_validate(existing_user_by_sub),
+        )
+
+    # Case C: Account exists with this email address, but is not linked to this Google sub
+    existing_user_by_email = get_user_by_email(db, email=email)
+    if existing_user_by_email:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "ACCOUNT_LINKING_REQUIRED",
+                "message": (
+                    f"An account with email '{email}' already exists. "
+                    "To protect your security, please sign in with your password to link your Google account."
+                ),
+                "email": email,
+            },
+        )
+
+    # Case A: New user registration via Google
+    new_user = create_google_user(
+        db=db,
+        google_data=claims,
+        campus=auth_data.campus,
+        department=auth_data.department,
+    )
+
+    access_token = create_access_token(subject=new_user.id)
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserOut.model_validate(new_user),
+    )
+
+
+@router.post(
+    "/auth/google/link-with-password",
+    response_model=Token,
+    status_code=status.HTTP_200_OK,
+    summary="Link Google account to existing password user via password verification",
+)
+def google_link_with_password(
+    link_data: GoogleLinkPasswordRequest,
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Verifies user password and Google credential, then links Google ID to existing account.
+    Returns standard JWT access token and user profile.
+    """
+    # 1. Verify password
+    user = get_user_by_email(db, email=link_data.email)
+    if not user or not user.has_usable_password or not verify_password(link_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password.",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This account has been deactivated.",
+        )
+
+    # 2. Verify Google credential
+    claims = verify_google_credential(link_data.credential)
+    sub = claims["sub"]
+    google_email = claims["email"]
+
+    if google_email.lower() != user.email.lower():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Google account email ({google_email}) does not match your Tracelt account email ({user.email}).",
+        )
+
+    # 3. Check if Google sub is linked to another user
+    other_user = get_user_by_google_sub(db, google_sub=sub)
+    if other_user and other_user.id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This Google account is already linked to another Tracelt user.",
+        )
+
+    # 4. Link Google account
+    updated_user = link_google_account(
+        db=db,
+        user=user,
+        google_sub=sub,
+        email_verified=True,
+        profile_image=claims.get("picture"),
+    )
+
+    access_token = create_access_token(subject=updated_user.id)
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserOut.model_validate(updated_user),
+    )
+
+
+@router.post(
+    "/auth/google/link",
+    response_model=UserOut,
+    status_code=status.HTTP_200_OK,
+    summary="Link Google account to current authenticated user",
+)
+def link_google_to_current_user(
+    link_data: GoogleLinkRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Links Google account to current authenticated user after verifying Google ID token."""
+    claims = verify_google_credential(link_data.credential)
+    sub = claims["sub"]
+
+    other_user = get_user_by_google_sub(db, google_sub=sub)
+    if other_user and other_user.id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This Google account is already linked to another Tracelt user.",
+        )
+
+    updated_user = link_google_account(
+        db=db,
+        user=current_user,
+        google_sub=sub,
+        email_verified=True,
+        profile_image=claims.get("picture"),
+    )
+    return UserOut.model_validate(updated_user)
+
+
+@router.post(
+    "/auth/google/unlink",
+    response_model=UserOut,
+    status_code=status.HTTP_200_OK,
+    summary="Unlink Google account from current authenticated user",
+)
+def unlink_google_from_current_user(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Unlinks Google account from user.
+    Requires user to have a usable password to prevent account lockout.
+    """
+    if not current_user.google_sub:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account is not linked to this profile.",
+        )
+
+    if not current_user.has_usable_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot unlink Google account without a password. Please set a password in your settings first.",
+        )
+
+    updated_user = unlink_google_account(db=db, user=current_user)
+    return UserOut.model_validate(updated_user)
 
 
 @router.get(

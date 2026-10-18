@@ -34,6 +34,89 @@ def create_user(db: Session, user_in: UserRegister) -> User:
     return db_user
 
 
+def get_user_by_google_sub(db: Session, google_sub: str) -> Optional[User]:
+    """Retrieves a user by unique Google subject identifier."""
+    if not google_sub:
+        return None
+    return db.query(User).filter(User.google_sub == str(google_sub).strip()).first()
+
+
+def create_google_user(
+    db: Session,
+    google_data: dict,
+    campus: Optional[str] = None,
+    department: Optional[str] = None,
+) -> User:
+    """
+    Creates a new user record authenticated via Google Identity Services.
+    - Stable Google sub stored in `google_sub`
+    - Email marked as verified
+    - Default role is strictly 'student'
+    - Hashed password is set to an unusable random marker to satisfy DB constraints safely
+    """
+    import uuid
+
+    email = google_data["email"].lower().strip()
+    full_name = google_data.get("name") or email.split("@")[0]
+    sub = google_data["sub"]
+    picture = google_data.get("picture")
+
+    resolved_campus = (campus or "").strip() or "Not Specified"
+    resolved_dept = (department or "").strip() or None
+
+    # Unusable password placeholder for accounts created directly via Google
+    placeholder_password = f"!google_oauth_{uuid.uuid4().hex}"
+
+    db_user = User(
+        email=email,
+        full_name=full_name,
+        hashed_password=placeholder_password,
+        campus=resolved_campus,
+        department=resolved_dept,
+        role="student",  # Always default user role
+        google_sub=sub,
+        auth_provider="google",
+        email_verified=True,
+        profile_image=picture,
+        is_active=True,
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def link_google_account(
+    db: Session,
+    user: User,
+    google_sub: str,
+    email_verified: bool = True,
+    profile_image: Optional[str] = None,
+) -> User:
+    """Links a verified Google subject identifier to an existing user."""
+    user.google_sub = str(google_sub).strip()
+    if email_verified:
+        user.email_verified = True
+    if user.has_usable_password:
+        user.auth_provider = "both"
+    else:
+        user.auth_provider = "google"
+    if profile_image and not user.profile_image:
+        user.profile_image = profile_image
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def unlink_google_account(db: Session, user: User) -> User:
+    """Unlinks Google identity from user account."""
+    user.google_sub = None
+    user.auth_provider = "email"
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def update_user_profile(db: Session, user: User, profile_data: dict) -> User:
     """
     Updates permitted profile fields for the authenticated user.

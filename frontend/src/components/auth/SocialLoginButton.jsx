@@ -1,6 +1,6 @@
-export default function SocialLoginButton({ provider = 'google', onClick, children }) {
+export default function SocialLoginButton({ provider = 'google', onClick, disabled = false, children }) {
   return (
-    <button type="button" className="social-btn" onClick={onClick}>
+    <button type="button" className="social-btn" onClick={onClick} disabled={disabled}>
       {provider === 'google' && <GoogleMark />}
       <span>{children}</span>
     </button>

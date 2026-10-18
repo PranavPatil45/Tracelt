@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, ArrowRight, Loader2, ShieldCheck, X } from "lucide-react";
 import InputField from "./InputField.jsx";
 import PasswordInput from "./PasswordInput.jsx";
-import SocialLoginButton from "./SocialLoginButton.jsx";
-import { startGoogleLogin, AuthError } from "../../api/auth.js";
+import GoogleSignInButton from "./GoogleSignInButton.jsx";
+import { AuthError } from "../../api/auth.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import "./LoginForm.css";
 
@@ -12,13 +12,20 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithGoogle, linkGoogleWithPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+
+  // Account linking state (Case C: email already registered)
+  const [accountLinking, setAccountLinking] = useState(null); // { email, credential }
+  const [linkingPassword, setLinkingPassword] = useState("");
+  const [linkingError, setLinkingError] = useState("");
+  const [linkingSubmitting, setLinkingSubmitting] = useState(false);
 
   function validate() {
     const next = {};
@@ -54,6 +61,71 @@ export default function LoginForm() {
       setFormError(message);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleGoogleSuccess(credential) {
+    setFormError("");
+    setLinkingError("");
+    setGoogleSubmitting(true);
+    try {
+      const result = await loginWithGoogle({ credential });
+      if (result?.accessToken) {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      if (err?.code === "ACCOUNT_LINKING_REQUIRED" || err?.status === 409) {
+        const targetEmail = err?.data?.email || err?.data?.detail?.email || email || "";
+        setAccountLinking({
+          email: targetEmail,
+          credential,
+        });
+        if (targetEmail && !email) {
+          setEmail(targetEmail);
+        }
+        setFormError(
+          err.message ||
+          "An account with this email already exists. Enter your password to securely link your Google account."
+        );
+      } else {
+        const message =
+          err instanceof AuthError
+            ? err.message
+            : "Google authentication failed. Please try again.";
+        setFormError(message);
+      }
+    } finally {
+      setGoogleSubmitting(false);
+    }
+  }
+
+  async function handleLinkPasswordSubmit(e) {
+    e.preventDefault();
+    setLinkingError("");
+    if (!linkingPassword) {
+      setLinkingError("Please enter your password to link your Google account.");
+      return;
+    }
+
+    setLinkingSubmitting(true);
+    try {
+      const result = await linkGoogleWithPassword({
+        email: accountLinking.email,
+        password: linkingPassword,
+        credential: accountLinking.credential,
+        remember: true,
+      });
+      if (result?.accessToken) {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      const message =
+        err instanceof AuthError
+          ? err.message
+          : "Could not link account. Please verify your password.";
+      setLinkingError(message);
+    } finally {
+      setLinkingSubmitting(false);
     }
   }
 
@@ -116,10 +188,62 @@ export default function LoginForm() {
           </div>
         )}
 
+        {accountLinking && (
+          <div className="login-form__linking-card" role="region" aria-label="Account Linking">
+            <div className="login-form__linking-header">
+              <ShieldCheck size={18} className="login-form__linking-icon" />
+              <div className="login-form__linking-text">
+                <strong>Link Google Account</strong>
+                <p>Enter your password to link <em>{accountLinking.email}</em>.</p>
+              </div>
+              <button
+                type="button"
+                className="login-form__linking-close"
+                onClick={() => {
+                  setAccountLinking(null);
+                  setLinkingError("");
+                }}
+                aria-label="Dismiss linking"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <PasswordInput
+              id="linkingPassword"
+              label="Account Password"
+              value={linkingPassword}
+              onChange={(e) => {
+                setLinkingPassword(e.target.value);
+                if (linkingError) setLinkingError("");
+              }}
+              placeholder="Enter your Tracelt password"
+              error={linkingError}
+            />
+
+            <button
+              type="button"
+              className="btn btn-primary login-form__submit"
+              disabled={linkingSubmitting}
+              onClick={handleLinkPasswordSubmit}
+            >
+              {linkingSubmitting ? (
+                <>
+                  <Loader2 size={16} className="spin" /> Verifying &amp; Linking&hellip;
+                </>
+              ) : (
+                <>
+                  Verify &amp; Link Google <ArrowRight size={16} className="login-form__submit-arrow" />
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         <button
           type="submit"
           className="btn btn-primary login-form__submit"
-          disabled={submitting}
+          disabled={submitting || googleSubmitting || linkingSubmitting}
         >
           {submitting ? (
             <>
@@ -137,9 +261,18 @@ export default function LoginForm() {
           <span>OR</span>
         </div>
 
-        <SocialLoginButton provider="google" onClick={startGoogleLogin}>
-          Continue with Google
-        </SocialLoginButton>
+        <GoogleSignInButton
+          mode="continue"
+          text="continue_with"
+          loading={googleSubmitting}
+          disabled={submitting || linkingSubmitting}
+          onSuccess={handleGoogleSuccess}
+          onError={(err) =>
+            setFormError(
+              err.message || "Google authentication was cancelled or could not be completed."
+            )
+          }
+        />
       </form>
 
       <p className="login-card__footer">

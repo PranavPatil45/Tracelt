@@ -1,5 +1,13 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import { loginUser, registerUser, getCurrentUser } from "../api/auth.js";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import {
+  loginUser,
+  registerUser,
+  getCurrentUser,
+  loginWithGoogle as apiLoginWithGoogle,
+  linkGoogleWithPassword as apiLinkGoogleWithPassword,
+  linkGoogleAccount as apiLinkGoogleAccount,
+  unlinkGoogleAccount as apiUnlinkGoogleAccount,
+} from "../api/auth.js";
 
 const AuthContext = createContext(null);
 
@@ -73,11 +81,7 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  async function login({ email, password, remember }) {
-    const result = await loginUser({ email, password, remember });
-    const { accessToken, user: authUser } = result;
-
-    // Clear both storages first to ensure clean state
+  function applySession({ accessToken, user: authUser }, remember = true) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
@@ -92,29 +96,44 @@ export function AuthProvider({ children }) {
       storage.setItem(USER_KEY, JSON.stringify(authUser));
       setUser(authUser);
     }
+  }
 
+  async function login({ email, password, remember }) {
+    const result = await loginUser({ email, password, remember });
+    applySession(result, remember);
     return result;
   }
 
   async function signup(details) {
     const result = await registerUser(details);
-    const { accessToken, user: authUser } = result;
-
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(USER_KEY);
-
-    if (accessToken) {
-      localStorage.setItem(TOKEN_KEY, accessToken);
-      setToken(accessToken);
-    }
-    if (authUser) {
-      localStorage.setItem(USER_KEY, JSON.stringify(authUser));
-      setUser(authUser);
-    }
-
+    applySession(result, true);
     return result;
+  }
+
+  async function loginWithGoogle({ credential, campus, department, remember = true }) {
+    const result = await apiLoginWithGoogle({ credential, campus, department });
+    applySession(result, remember);
+    return result;
+  }
+
+  async function linkGoogleWithPassword({ email, password, credential, remember = true }) {
+    const result = await apiLinkGoogleWithPassword({ email, password, credential });
+    applySession(result, remember);
+    return result;
+  }
+
+  async function linkGoogle({ credential }) {
+    const activeToken = token || localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    const updatedUser = await apiLinkGoogleAccount({ credential, token: activeToken });
+    updateUser(updatedUser);
+    return updatedUser;
+  }
+
+  async function unlinkGoogle() {
+    const activeToken = token || localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    const updatedUser = await apiUnlinkGoogleAccount({ token: activeToken });
+    updateUser(updatedUser);
+    return updatedUser;
   }
 
   function logout() {
@@ -165,6 +184,10 @@ export function AuthProvider({ children }) {
     isAuthenticated: Boolean(token && user),
     login,
     signup,
+    loginWithGoogle,
+    linkGoogleWithPassword,
+    linkGoogle,
+    unlinkGoogle,
     logout,
     updateUser,
     refreshUser,

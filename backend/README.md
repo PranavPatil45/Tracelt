@@ -55,12 +55,58 @@ uvicorn app.main:app --reload --port 8000 --app-dir backend
 - **ReDoc Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 - **Health Check**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
-## API Endpoints
-
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
 | `POST` | `/api/register` (or `/register`) | Create new user account | No |
 | `POST` | `/api/login` (or `/login`) | Authenticate user & get JWT | No |
 | `POST` | `/api/token` | OAuth2 form login for Swagger docs | No |
+| `POST` | `/api/auth/google` (or `/auth/google`) | Sign-in / sign-up with Google ID token credential | No |
+| `POST` | `/api/auth/google/link-with-password` | Link existing password account with Google credential | No |
+| `POST` | `/api/auth/google/link` | Link Google account to current authenticated user | Yes (Bearer token) |
+| `POST` | `/api/auth/google/unlink` | Disconnect Google account from current user | Yes (Bearer token) |
 | `GET` | `/api/me` (or `/me`) | Get current user's profile | Yes (Bearer token) |
 | `GET` | `/health` | Service health status | No |
+
+## Google Authentication Setup
+
+### 1. Google Cloud Console Configuration
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create or select an existing project.
+3. Configure the **OAuth Consent Screen**:
+   - User Type: **External** (or Internal for institutional Google Workspace).
+   - App Name: `Tracelt`
+   - User support email and developer contact info.
+   - Scopes: `openid`, `email`, `profile`.
+4. Create an **OAuth 2.0 Client ID**:
+   - Application Type: **Web application**
+   - Name: `Tracelt Web Client`
+   - **Authorized JavaScript origins**:
+     - Local dev: `http://localhost:5173` and `http://127.0.0.1:5173`
+     - Production: `https://yourdomain.com`
+   - Authorized redirect URIs: Not required for Google Identity Services (GIS) ID-token popups.
+5. Copy the generated **Client ID** (e.g. `123456789-abcdef.apps.googleusercontent.com`).
+
+### 2. Environment Configuration
+- In `backend/.env`:
+  ```bash
+  GOOGLE_CLIENT_ID="123456789-abcdef.apps.googleusercontent.com"
+  ```
+- In `frontend/.env`:
+  ```bash
+  VITE_GOOGLE_CLIENT_ID="123456789-abcdef.apps.googleusercontent.com"
+  ```
+
+### 3. Account Linking & Security Model
+- **Case A (New User)**: Registers account with verified email, default role `student`, and prompts for campus in profile if not provided during signup.
+- **Case B (Returning Google User)**: Automatically signs in and returns standard Tracelt JWT access token.
+- **Case C (Existing Email/Password User)**: Prevents duplicate accounts or silent auto-linking. Returns HTTP 409 `ACCOUNT_LINKING_REQUIRED` and displays an explicit password-verification linking card in the UI or allows linking inside Settings.
+
+### 4. Running Verification Tests
+Execute automated authentication suites (with mocks; no live Google network requests):
+```bash
+# Verify baseline email/password authentication
+python backend/verify_auth.py
+
+# Verify Google Identity Services authentication & account linking
+python backend/verify_google_auth.py
+```

@@ -728,6 +728,81 @@
   }
 }
 
+/* --- Profile Onboarding Alert (Google Users) --- */
+.profile-onboarding-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(69, 214, 224, 0.08);
+  border: 1px solid rgba(69, 214, 224, 0.3);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+}
+
+.profile-onboarding-alert__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.profile-onboarding-alert__icon {
+  color: var(--cyan);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.profile-onboarding-alert__content strong {
+  display: block;
+  font-size: 15px;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.profile-onboarding-alert__content p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* --- Connected Accounts (OAuth) --- */
+.profile-oauth-provider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-hair-strong);
+}
+
+.profile-oauth-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.profile-oauth-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-oauth-provider-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 /* --- Responsive Adjustments --- */
 @media (max-width: 900px) {
   .profile-grid-2col {
