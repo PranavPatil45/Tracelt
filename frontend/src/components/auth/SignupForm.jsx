@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { User, Mail, ArrowRight, Loader2 } from "lucide-react";
 import InputField from "./InputField.jsx";
 import PasswordInput from "./PasswordInput.jsx";
 import PasswordStrength, { passwordScore } from "./PasswordStrength.jsx";
 import CampusSelect from "./CampusSelect.jsx";
-import SocialLoginButton from "./SocialLoginButton.jsx";
+import GoogleSignInButton from "./GoogleSignInButton.jsx";
 import SignupSuccess from "./SignupSuccess.jsx";
-import { startGoogleLogin, AuthError } from "../../api/auth.js";
+import { AuthError } from "../../api/auth.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { CAMPUSES, DEPARTMENTS } from "../../data/campuses.js";
 import "./LoginForm.css";
@@ -17,7 +17,8 @@ import LogoIcon from "./LogoIcon";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignupForm() {
-  const { signup } = useAuth();
+  const navigate = useNavigate();
+  const { signup, loginWithGoogle } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +30,37 @@ export default function SignupForm() {
   const [touched, setTouched] = useState({}); // Track which fields have been blurred
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  async function handleGoogleSuccess(credential) {
+    setFormError("");
+    setGoogleSubmitting(true);
+    try {
+      const result = await loginWithGoogle({
+        credential,
+        campus: campus.trim() || undefined,
+        department: department.trim() || undefined,
+      });
+      if (result?.accessToken) {
+        setSuccess(true);
+      }
+    } catch (err) {
+      if (err?.code === "ACCOUNT_LINKING_REQUIRED" || err?.status === 409) {
+        setFormError(
+          "An account with this email already exists. Please sign in to link your Google account."
+        );
+      } else {
+        const message =
+          err instanceof AuthError
+            ? err.message
+            : "Google registration failed. Please try again.";
+        setFormError(message);
+      }
+    } finally {
+      setGoogleSubmitting(false);
+    }
+  }
 
   // Helper to mark a specific field as touched onBlur
   function handleBlur(field) {
@@ -122,9 +153,18 @@ export default function SignupForm() {
       <h1 className="login-card__heading">Create your account</h1>
 
       <form className="login-form" onSubmit={handleSubmit} noValidate>
-        <SocialLoginButton provider="google" onClick={startGoogleLogin}>
-          Continue with Google
-        </SocialLoginButton>
+        <GoogleSignInButton
+          mode="signup"
+          text="signup_with"
+          loading={googleSubmitting}
+          disabled={submitting}
+          onSuccess={handleGoogleSuccess}
+          onError={(err) =>
+            setFormError(
+              err.message || "Google registration was cancelled or could not be completed."
+            )
+          }
+        />
 
         <div className="login-form__divider">
           <span>OR</span>

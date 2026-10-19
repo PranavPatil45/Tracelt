@@ -17,8 +17,8 @@ class Conversation(Base):
     )
     match_id = Column(
         Integer,
-        ForeignKey("matches.id", ondelete="CASCADE"),
-        nullable=False,
+        ForeignKey("matches.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
 

@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.claim import Claim
 from app.schemas.claim import (
     ClaimCreate,
+    DirectClaimCreate,
     ClaimReview,
     ClaimResponse,
     ClaimListResponse,
@@ -19,9 +20,11 @@ from app.crud.claim import (
     get_claimant_claims,
     get_finder_claims,
     get_active_claim_for_match,
+    get_active_claim_for_found_item,
 )
 from app.services.claim_service import (
     create_claim,
+    create_direct_claim,
     review_claim,
     cancel_claim,
 )
@@ -45,36 +48,41 @@ def _serialize_claim(claim: Claim) -> ClaimResponse:
     found_summary = None
     match_score = None
 
+    target_lost = claim.lost_item or (claim.match.lost_item if claim.match else None)
+    if target_lost:
+        lost_summary = ClaimItemSummary(
+            id=target_lost.id,
+            title=target_lost.title,
+            category=target_lost.category,
+            location=target_lost.location,
+            campus=target_lost.campus,
+            date=target_lost.lost_date,
+            image_url=target_lost.image_url,
+            status=target_lost.status,
+            user_id=target_lost.user_id,
+        )
+
+    target_found = claim.found_item or (claim.match.found_item if claim.match else None)
+    if target_found:
+        found_summary = ClaimItemSummary(
+            id=target_found.id,
+            title=target_found.title,
+            category=target_found.category,
+            location=target_found.location,
+            campus=target_found.campus,
+            date=target_found.found_date,
+            image_url=target_found.image_url,
+            status=target_found.status,
+            user_id=target_found.user_id,
+        )
+
     if claim.match:
         match_score = claim.match.total_score
-        if claim.match.lost_item:
-            lost_summary = ClaimItemSummary(
-                id=claim.match.lost_item.id,
-                title=claim.match.lost_item.title,
-                category=claim.match.lost_item.category,
-                location=claim.match.lost_item.location,
-                campus=claim.match.lost_item.campus,
-                date=claim.match.lost_item.lost_date,
-                image_url=claim.match.lost_item.image_url,
-                status=claim.match.lost_item.status,
-                user_id=claim.match.lost_item.user_id,
-            )
-        if claim.match.found_item:
-            found_summary = ClaimItemSummary(
-                id=claim.match.found_item.id,
-                title=claim.match.found_item.title,
-                category=claim.match.found_item.category,
-                location=claim.match.found_item.location,
-                campus=claim.match.found_item.campus,
-                date=claim.match.found_item.found_date,
-                image_url=claim.match.found_item.image_url,
-                status=claim.match.found_item.status,
-                user_id=claim.match.found_item.user_id,
-            )
 
     return ClaimResponse(
         id=claim.id,
         match_id=claim.match_id,
+        found_item_id=target_found.id if target_found else claim.found_item_id,
         claimant_id=claim.claimant_id,
         claimant=claimant_summary,
         verification_details=claim.verification_details,
@@ -104,7 +112,7 @@ def submit_match_claim(
     db: Session = Depends(get_db),
 ) -> Any:
     """
-    Submits ownership verification evidence for a found item.
+    Submits ownership verification evidence for a found item via automated match.
     Claimant ID is strictly derived from the authenticated token.
     """
     claim = create_claim(
@@ -114,6 +122,96 @@ def submit_match_claim(
         verification_details=claim_in.verification_details,
         additional_message=claim_in.additional_message,
     )
+    return _serialize_claim(claim)
+
+
+@router.post(
+    "/found-items/{found_item_id}/claim",
+    response_model=ClaimResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Submit a direct ownership claim for a found item",
+)
+def submit_direct_claim(
+    found_item_id: int,
+    claim_in: ClaimCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Submits ownership verification evidence directly for a found item
+    without requiring an automated match record.
+    Claimant ID is strictly derived from the authenticated token.
+    """
+    claim = create_direct_claim(
+        db=db,
+        found_item_id=found_item_id,
+        claimant=current_user,
+        verification_details=claim_in.verification_details,
+        additional_message=claim_in.additional_message,
+    )
+    return _serialize_claim(claim)
+
+
+@router.post(
+    "/lost-items/{lost_item_id}/claim",
+    status_code=status.HTTP_400_BAD_REQUEST,
+    summary="Reject claim attempts on lost items",
+)
+def reject_lost_item_claim(
+    lost_item_id: int,
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """
+    Explicitly rejects any attempt to submit an ownership claim for a lost item report.
+    Only found items can be claimed.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Cannot claim a lost item report. Ownership claims can only be submitted for found items.",
+    )
+
+
+@router.post(
+    "/claims",
+    response_model=ClaimResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Unified claim creation (direct or match-based)",
+)
+def submit_claim_unified(
+    claim_in: DirectClaimCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Submits an ownership claim either by found_item_id (direct) or match_id (match-based).
+    """
+    if getattr(claim_in, "lost_item_id", None) and not claim_in.match_id and not claim_in.found_item_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot claim a lost item report. Ownership claims can only be submitted for found items.",
+        )
+
+    if claim_in.match_id:
+        claim = create_claim(
+            db=db,
+            match_id=claim_in.match_id,
+            claimant=current_user,
+            verification_details=claim_in.verification_details,
+            additional_message=claim_in.additional_message,
+        )
+    elif claim_in.found_item_id:
+        claim = create_direct_claim(
+            db=db,
+            found_item_id=claim_in.found_item_id,
+            claimant=current_user,
+            verification_details=claim_in.verification_details,
+            additional_message=claim_in.additional_message,
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either found_item_id or match_id is required to submit a claim.",
+        )
     return _serialize_claim(claim)
 
 
@@ -197,11 +295,8 @@ def get_claim_detail(
 
     # Authorization: claimant OR finder
     is_claimant = claim.claimant_id == current_user.id
-    is_finder = (
-        claim.match
-        and claim.match.found_item
-        and claim.match.found_item.user_id == current_user.id
-    )
+    target_found = claim.found_item or (claim.match.found_item if claim.match else None)
+    is_finder = target_found is not None and target_found.user_id == current_user.id
 
     if not (is_claimant or is_finder):
         raise HTTPException(
@@ -263,6 +358,25 @@ def check_match_active_claim(
 ) -> Any:
     """Returns active claim if exists for this match, else null."""
     claim = get_active_claim_for_match(db, match_id=match_id)
+    if not claim:
+        return {"has_active_claim": False, "claim": None}
+    return {
+        "has_active_claim": True,
+        "claim": _serialize_claim(claim),
+    }
+
+
+@router.get(
+    "/found-items/{found_item_id}/active-claim",
+    summary="Check active claim status for a found item",
+)
+def check_found_item_active_claim(
+    found_item_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """Returns active claim if exists for this found item for current user, else null."""
+    claim = get_active_claim_for_found_item(db, found_item_id=found_item_id, claimant_id=current_user.id)
     if not claim:
         return {"has_active_claim": False, "claim": None}
     return {

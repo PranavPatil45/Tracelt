@@ -146,7 +146,11 @@ export default function AdminFoundItems() {
       render: (item) => (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <Link
-            to={`/found-items/${item.id}`}
+            to={{
+              pathname: `/found-items/${item.id}`,
+              search: '?from=admin-portal',
+            }}
+            state={{ from: 'admin-portal' }}
             className="admin-btn admin-btn-secondary"
             style={{ padding: '0.35rem 0.65rem' }}
             title="Inspect item report page"

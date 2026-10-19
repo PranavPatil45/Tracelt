@@ -24,7 +24,7 @@ class ConversationItemSummary(BaseModel):
 class ConversationSummary(BaseModel):
     id: int
     claim_id: int
-    match_id: int
+    match_id: Optional[int] = None
     claim_status: str
     item: Optional[ConversationItemSummary] = None
     other_participant: Optional[ParticipantSummary] = None
@@ -48,7 +48,7 @@ class ConversationListResponse(BaseModel):
 class ConversationDetailResponse(BaseModel):
     id: int
     claim_id: int
-    match_id: int
+    match_id: Optional[int] = None
     claim_status: str
     item: Optional[ConversationItemSummary] = None
     other_participant: Optional[ParticipantSummary] = None

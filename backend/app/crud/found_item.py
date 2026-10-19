@@ -111,6 +111,9 @@ def delete_found_item(db: Session, db_item: FoundItem) -> None:
         db.query(Claim).filter(Claim.match_id.in_(match_ids)).delete(synchronize_session=False)
         db.query(Match).filter(Match.id.in_(match_ids)).delete(synchronize_session=False)
 
+    # Delete direct claims for this found item
+    db.query(Claim).filter(Claim.found_item_id == db_item.id).delete(synchronize_session=False)
+
     image_url = db_item.image_url
     item_id = db_item.id
 

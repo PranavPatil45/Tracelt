@@ -1,11 +1,5 @@
 import { Fragment } from "react";
-import {
-  FileSearch,
-  GitCompare,
-  Bell,
-  ShieldCheck,
-  Heart,
-} from "lucide-react";
+import { FileSearch, GitCompare, Bell, ShieldCheck, Heart } from "lucide-react";
 import "./TraceltPoster.css";
 import LogoIcon from "./LogoIcon";
 const FEATURES = [
@@ -34,7 +28,6 @@ const FEATURES = [
     description: "Reunite items with their owners safely.",
   },
 ];
-
 
 export default function TraceltPoster() {
   return (
@@ -72,12 +65,7 @@ export default function TraceltPoster() {
             const Icon = feature.icon;
             return (
               <Fragment key={feature.id}>
-                {i > 0 && (
-                  <span
-                    className="tp-sep"
-                    aria-hidden="true"
-                  />
-                )}
+                {i > 0 && <span className="tp-sep" aria-hidden="true" />}
                 <div
                   className="tp-feature"
                   style={{ "--tp-delay": `${0.15 + i * 0.09}s` }}

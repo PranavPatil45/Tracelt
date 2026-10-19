@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ShieldCheck, X, CheckCircle2, AlertCircle, Info, GitCompare, Loader2, ArrowRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { submitClaim } from '../../api/claims.js'
+import { submitClaim, submitDirectClaim } from '../../api/claims.js'
 import './ClaimActionModal.css'
 
 export default function ClaimActionModal({
@@ -13,7 +13,7 @@ export default function ClaimActionModal({
   onClose,
   onClaimSuccess,
 }) {
-  const { token } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
 
   const [verificationDetails, setVerificationDetails] = useState('')
@@ -24,10 +24,13 @@ export default function ClaimActionModal({
 
   if (!isOpen) return null
 
-  // Resolve match ID
+  // Resolve match ID and item references
   const effectiveMatchId = match?.id || propMatchId
-  const foundItem = match?.found_item || (item?.type === 'FOUND' ? item : null)
-  const lostItem = match?.lost_item || (item?.type === 'LOST' ? item : null)
+  const isFound = (item?.type || '').toUpperCase() === 'FOUND' || Boolean(item?.found_date && !item?.lost_date)
+  const isLost = (item?.type || '').toUpperCase() === 'LOST' || Boolean(item?.lost_date && !item?.found_date)
+  const foundItem = match?.found_item || (isFound ? item : null)
+  const lostItem = match?.lost_item || (isLost ? item : null)
+  const effectiveFoundItemId = isFound ? item?.id : (match?.found_item?.id || null)
 
   const foundTitle = foundItem?.title || 'Found Item'
   const lostTitle = lostItem?.title || 'Reported Lost Item'
@@ -44,8 +47,26 @@ export default function ClaimActionModal({
       return
     }
 
-    if (!effectiveMatchId) {
-      setError('A possible match pairing is required to submit an ownership claim.')
+    // Safety guard: Ensure a direct claim is never submitted for a lost item ID
+    if (!effectiveMatchId && isLost) {
+      setError('Ownership claims can only be submitted for found items, not lost reports.')
+      return
+    }
+
+    if (!effectiveMatchId && !effectiveFoundItemId) {
+      setError('A valid found item or match pairing is required to submit an ownership claim.')
+      return
+    }
+
+    // Prevent finder from claiming own found item
+    if (!effectiveMatchId && isFound && foundItem?.user_id && user?.id && foundItem.user_id === user.id) {
+      setError('You cannot claim an item you reported as found yourself.')
+      return
+    }
+
+    // Prevent claiming unavailable/closed found items
+    if (!effectiveMatchId && isFound && foundItem?.status && !['AVAILABLE', 'ACTIVE'].includes(foundItem.status.toUpperCase())) {
+      setError('This found item is no longer available for claiming.')
       return
     }
 
@@ -57,7 +78,12 @@ export default function ClaimActionModal({
         verification_details: trimmedProof,
         additional_message: additionalMessage.trim() || undefined,
       }
-      const newClaim = await submitClaim(effectiveMatchId, payload, token)
+      let newClaim
+      if (effectiveMatchId) {
+        newClaim = await submitClaim(effectiveMatchId, payload, token)
+      } else {
+        newClaim = await submitDirectClaim(effectiveFoundItemId, payload, token)
+      }
       setSubmittedClaim(newClaim)
       if (onClaimSuccess) {
         onClaimSuccess(newClaim)
@@ -226,7 +252,7 @@ export default function ClaimActionModal({
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={submitting || verificationDetails.trim().length < 10}
+                disabled={submitting || verificationDetails.trim().length < 10 || (!effectiveMatchId && isLost)}
               >
                 {submitting ? (
                   <>

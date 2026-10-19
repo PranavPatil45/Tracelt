@@ -78,9 +78,16 @@ class ClaimItemSummary(BaseModel):
         from_attributes = True
 
 
+class DirectClaimCreate(ClaimCreate):
+    found_item_id: Optional[int] = Field(None, description="ID of the found item to claim directly.")
+    lost_item_id: Optional[int] = Field(None, description="Direct claims on lost items are explicitly rejected.")
+    match_id: Optional[int] = Field(None, description="Optional match ID if claiming via match.")
+
+
 class ClaimResponse(BaseModel):
     id: int
-    match_id: int
+    match_id: Optional[int] = None
+    found_item_id: Optional[int] = None
     claimant_id: int
     claimant: Optional[ClaimUserSummary] = None
     verification_details: str

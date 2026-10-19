@@ -347,48 +347,77 @@ export default function ClaimsPage() {
 
                       {/* Paired Items Overview */}
                       <div className="claim-items-pair">
-                        {/* Lost Item (Claimant's) */}
-                        <Link
-                          to={`/lost-items/${claim.lost_item?.id}`}
-                          className="claim-item-node"
-                          title="View Lost Item report"
-                        >
-                          {claim.lost_item?.image_url ? (
-                            <img
-                              src={claim.lost_item.image_url}
-                              alt={claim.lost_item.title}
-                              className="claim-item-img"
-                            />
-                          ) : (
-                            <div className="claim-item-placeholder">
-                              <Package size={22} />
+                        {/* Lost Item (Claimant's) or Direct Claim indicator */}
+                        {claim.lost_item ? (
+                          <Link
+                            to={{
+                              pathname: `/lost-items/${claim.lost_item.id}`,
+                              search: '?from=claims',
+                            }}
+                            state={{ from: 'claims' }}
+                            className="claim-item-node"
+                            title="View Lost Item report"
+                          >
+                            {claim.lost_item.image_url ? (
+                              <img
+                                src={claim.lost_item.image_url}
+                                alt={claim.lost_item.title}
+                                className="claim-item-img"
+                              />
+                            ) : (
+                              <div className="claim-item-placeholder">
+                                <Package size={22} />
+                              </div>
+                            )}
+                            <div className="claim-item-info">
+                              <span className="claim-item-role-tag">
+                                {isFinder ? "Claimant's Lost Report" : 'Your Lost Report'}
+                              </span>
+                              <h4 className="claim-item-title">{claim.lost_item.title}</h4>
+                              <span className="claim-item-meta">
+                                <MapPin size={11} />
+                                {claim.lost_item.location}
+                              </span>
                             </div>
-                          )}
-                          <div className="claim-item-info">
-                            <span className="claim-item-role-tag">
-                              {isFinder ? "Claimant's Lost Report" : 'Your Lost Report'}
-                            </span>
-                            <h4 className="claim-item-title">{claim.lost_item?.title}</h4>
-                            <span className="claim-item-meta">
-                              <MapPin size={11} />
-                              {claim.lost_item?.location}
-                            </span>
+                          </Link>
+                        ) : (
+                          <div className="claim-item-node" style={{ cursor: 'default' }}>
+                            <div className="claim-item-placeholder">
+                              <ShieldCheck size={22} />
+                            </div>
+                            <div className="claim-item-info">
+                              <span className="claim-item-role-tag">
+                                Direct Claim
+                              </span>
+                              <h4 className="claim-item-title">Discovered on Campus</h4>
+                              <span className="claim-item-meta">
+                                Direct Verification
+                              </span>
+                            </div>
                           </div>
-                        </Link>
+                        )}
 
                         {/* Middle Match Score */}
                         <div className="claim-items-connector">
                           <ArrowRight size={16} />
-                          {claim.match_score !== undefined && (
+                          {claim.match_score !== undefined && claim.match_score !== null ? (
                             <span className="claim-match-score-badge">
                               {claim.match_score}% MATCH
+                            </span>
+                          ) : (
+                            <span className="claim-match-score-badge" style={{ background: '#334155', color: '#94a3b8' }}>
+                              DIRECT
                             </span>
                           )}
                         </div>
 
                         {/* Found Item (Finder's) */}
                         <Link
-                          to={`/found-items/${claim.found_item?.id}`}
+                          to={{
+                            pathname: `/found-items/${claim.found_item?.id}`,
+                            search: '?from=claims',
+                          }}
+                          state={{ from: 'claims' }}
                           className="claim-item-node"
                           title="View Found Item report"
                         >

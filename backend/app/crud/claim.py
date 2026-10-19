@@ -1,4 +1,5 @@
 from typing import List, Optional, Tuple
+from sqlalchemy import or_, and_
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.claim import Claim
@@ -15,6 +16,8 @@ def get_claim_by_id(db: Session, claim_id: int) -> Optional[Claim]:
         .options(
             joinedload(Claim.match).joinedload(Match.lost_item),
             joinedload(Claim.match).joinedload(Match.found_item),
+            joinedload(Claim.found_item),
+            joinedload(Claim.lost_item),
             joinedload(Claim.claimant),
         )
         .first()
@@ -36,6 +39,28 @@ def get_active_claim_for_match(
     return query.first()
 
 
+def get_active_claim_for_found_item(
+    db: Session,
+    found_item_id: int,
+    claimant_id: Optional[int] = None,
+) -> Optional[Claim]:
+    """Checks if an active claim already exists on a given found item (direct or match-based)."""
+    query = (
+        db.query(Claim)
+        .outerjoin(Match, Claim.match_id == Match.id)
+        .filter(
+            or_(
+                Claim.found_item_id == found_item_id,
+                and_(Claim.found_item_id.is_(None), Match.found_item_id == found_item_id),
+            ),
+            Claim.status.in_(["PENDING", "UNDER_REVIEW", "APPROVED"]),
+        )
+    )
+    if claimant_id is not None:
+        query = query.filter(Claim.claimant_id == claimant_id)
+    return query.first()
+
+
 def get_claimant_claims(
     db: Session,
     claimant_id: int,
@@ -50,6 +75,8 @@ def get_claimant_claims(
         .options(
             joinedload(Claim.match).joinedload(Match.lost_item),
             joinedload(Claim.match).joinedload(Match.found_item),
+            joinedload(Claim.found_item),
+            joinedload(Claim.lost_item),
             joinedload(Claim.claimant),
         )
     )
@@ -78,12 +105,20 @@ def get_finder_claims(
     """Retrieve incoming claims submitted on items found by this user (Finder view)."""
     query = (
         db.query(Claim)
-        .join(Match, Claim.match_id == Match.id)
-        .join(FoundItem, Match.found_item_id == FoundItem.id)
+        .outerjoin(Match, Claim.match_id == Match.id)
+        .join(
+            FoundItem,
+            or_(
+                Claim.found_item_id == FoundItem.id,
+                and_(Claim.found_item_id.is_(None), Match.found_item_id == FoundItem.id),
+            ),
+        )
         .filter(FoundItem.user_id == finder_user_id)
         .options(
             joinedload(Claim.match).joinedload(Match.lost_item),
             joinedload(Claim.match).joinedload(Match.found_item),
+            joinedload(Claim.found_item),
+            joinedload(Claim.lost_item),
             joinedload(Claim.claimant),
         )
     )

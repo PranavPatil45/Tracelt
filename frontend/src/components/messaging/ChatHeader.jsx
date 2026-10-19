@@ -101,7 +101,11 @@ export default function ChatHeader({
       <div className="msg-header-actions">
         {item?.id && (
           <Link
-            to={item.item_type === 'FOUND' ? `/found-items/${item.id}` : `/lost-items/${item.id}`}
+            to={{
+              pathname: item.item_type === 'FOUND' ? `/found-items/${item.id}` : `/lost-items/${item.id}`,
+              search: '?from=messages',
+            }}
+            state={{ from: 'messages' }}
             className="btn btn-secondary btn-sm msg-header-action-btn"
             title="View full report"
           >

@@ -113,25 +113,26 @@ def notify_match_found(
 def notify_claim_submitted(
     db: Session,
     claim: Claim,
-    match: Match,
+    match: Optional[Match] = None,
     commit: bool = True,
 ) -> Optional[Notification]:
     """
     Notifies the finder (owner of Found Item) that an ownership claim has been submitted.
     """
-    if not match or not match.found_item or not match.found_item.user_id:
+    found_item = claim.found_item if (claim and claim.found_item) else (match.found_item if match else None)
+    if not found_item or not found_item.user_id:
         return None
 
-    finder_id = match.found_item.user_id
-    found_title = match.found_item.title
+    finder_id = found_item.user_id
+    found_title = found_item.title
 
     title = "📋 New Claim Request"
     message = f"Someone submitted an ownership claim for the {found_title} you reported found."
     metadata = {
         "claim_id": claim.id,
-        "match_id": match.id,
-        "found_item_id": match.found_item.id,
-        "lost_item_id": match.lost_item_id,
+        "match_id": match.id if match else None,
+        "found_item_id": found_item.id,
+        "lost_item_id": match.lost_item_id if match else (claim.lost_item_id if claim else None),
     }
 
     return create_notification(
@@ -150,7 +151,7 @@ def notify_claim_submitted(
 def notify_claim_approved(
     db: Session,
     claim: Claim,
-    match: Match,
+    match: Optional[Match] = None,
     reviewer_notes: Optional[str] = None,
     commit: bool = True,
 ) -> Optional[Notification]:
@@ -160,7 +161,8 @@ def notify_claim_approved(
     if not claim or not claim.claimant_id:
         return None
 
-    found_title = match.found_item.title if match and match.found_item else "the item"
+    found_item = claim.found_item if (claim and claim.found_item) else (match.found_item if match else None)
+    found_title = found_item.title if found_item else "the item"
 
     title = "✓ Claim Approved"
     message = f"Your claim for {found_title} has been approved! Please coordinate return of the item."
@@ -189,7 +191,7 @@ def notify_claim_approved(
 def notify_claim_rejected(
     db: Session,
     claim: Claim,
-    match: Match,
+    match: Optional[Match] = None,
     reviewer_notes: Optional[str] = None,
     commit: bool = True,
 ) -> Optional[Notification]:
@@ -199,7 +201,8 @@ def notify_claim_rejected(
     if not claim or not claim.claimant_id:
         return None
 
-    found_title = match.found_item.title if match and match.found_item else "the item"
+    found_item = claim.found_item if (claim and claim.found_item) else (match.found_item if match else None)
+    found_title = found_item.title if found_item else "the item"
 
     title = "Claim Update"
     message = f"Your claim for {found_title} was rejected by the finder."
@@ -228,23 +231,24 @@ def notify_claim_rejected(
 def notify_claim_cancelled(
     db: Session,
     claim: Claim,
-    match: Match,
+    match: Optional[Match] = None,
     commit: bool = True,
 ) -> Optional[Notification]:
     """
     Notifies the finder that a pending claim was cancelled by the claimant.
     """
-    if not match or not match.found_item or not match.found_item.user_id:
+    found_item = claim.found_item if (claim and claim.found_item) else (match.found_item if match else None)
+    if not found_item or not found_item.user_id:
         return None
 
-    finder_id = match.found_item.user_id
-    found_title = match.found_item.title
+    finder_id = found_item.user_id
+    found_title = found_item.title
 
     title = "Claim Cancelled"
     message = f"The claimant has withdrawn their claim for {found_title}."
     metadata = {
         "claim_id": claim.id,
-        "match_id": match.id,
+        "match_id": match.id if match else None,
     }
 
     return create_notification(
@@ -303,7 +307,7 @@ def notify_item_returned(
     if not recovery or not recovery.claimant_id:
         return None
 
-    item_title = recovery.lost_item.title if recovery.lost_item else "Item"
+    item_title = recovery.lost_item.title if recovery.lost_item else (recovery.found_item.title if recovery.found_item else "Item")
     title = "🎉 Item Returned"
     message = f"The finder has marked your {item_title} as returned. Please confirm that you received it."
     metadata = {

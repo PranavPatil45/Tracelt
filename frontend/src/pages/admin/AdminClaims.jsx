@@ -214,11 +214,24 @@ export default function AdminClaims() {
                   <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     {inspectClaim.claimant_email}
                   </span>
-                  <div style={{ marginTop: '0.4rem' }}>
-                    <Link to={`/lost-items/${inspectClaim.lost_item_id}`} style={{ color: 'var(--amber)', fontSize: '0.82rem' }}>
-                      Lost Item: {inspectClaim.lost_item_title} &rarr;
-                    </Link>
-                  </div>
+                  {inspectClaim.lost_item_id ? (
+                    <div style={{ marginTop: '0.4rem' }}>
+                      <Link
+                        to={{
+                          pathname: `/lost-items/${inspectClaim.lost_item_id}`,
+                          search: '?from=admin-portal',
+                        }}
+                        state={{ from: 'admin-portal' }}
+                        style={{ color: 'var(--amber)', fontSize: '0.82rem' }}
+                      >
+                        Lost Item: {inspectClaim.lost_item_title} &rarr;
+                      </Link>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: '0.4rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                      <em>Direct Claim (No Lost Item Report)</em>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -227,7 +240,14 @@ export default function AdminClaims() {
                   </span>
                   <strong>{inspectClaim.finder_name || 'Anonymous Finder'}</strong>
                   <div style={{ marginTop: '0.4rem' }}>
-                    <Link to={`/found-items/${inspectClaim.found_item_id}`} style={{ color: 'var(--cyan)', fontSize: '0.82rem' }}>
+                    <Link
+                      to={{
+                        pathname: `/found-items/${inspectClaim.found_item_id}`,
+                        search: '?from=admin-portal',
+                      }}
+                      state={{ from: 'admin-portal' }}
+                      style={{ color: 'var(--cyan)', fontSize: '0.82rem' }}
+                    >
                       Found Item: {inspectClaim.found_item_title} &rarr;
                     </Link>
                   </div>

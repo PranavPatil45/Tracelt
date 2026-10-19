@@ -250,17 +250,27 @@ def get_admin_activity(
     claim_q = db.query(Claim)
     if clean_campus:
         claim_q = (
-            claim_q.join(Match, Claim.match_id == Match.id)
-            .join(LostItem, Match.lost_item_id == LostItem.id)
-            .filter(LostItem.campus == clean_campus)
+            claim_q.outerjoin(Match, Claim.match_id == Match.id)
+            .outerjoin(LostItem, or_(Match.lost_item_id == LostItem.id, Claim.lost_item_id == LostItem.id))
+            .outerjoin(FoundItem, or_(Match.found_item_id == FoundItem.id, Claim.found_item_id == FoundItem.id))
+            .filter(or_(LostItem.campus == clean_campus, FoundItem.campus == clean_campus))
         )
     claims = claim_q.order_by(desc(Claim.created_at)).limit(30).all()
     for c in claims:
         c_name = c.claimant.full_name if c.claimant else "Claimant"
-        l_title = c.match.lost_item.title if (c.match and c.match.lost_item) else "Item"
+        l_title = (
+            c.match.lost_item.title
+            if (c.match and c.match.lost_item)
+            else (c.found_item.title if c.found_item else "Item")
+        )
         action_type = f"CLAIM_{c.status}" if c.status in ("APPROVED", "REJECTED") else "CLAIM_SUBMITTED"
         action_title = (
             "Claim approved" if c.status == "APPROVED" else ("Claim rejected" if c.status == "REJECTED" else "New claim submitted")
+        )
+        item_campus = (
+            c.match.lost_item.campus
+            if (c.match and c.match.lost_item)
+            else (c.found_item.campus if c.found_item else None)
         )
         events.append(
             AdminActivityItem(
@@ -272,7 +282,7 @@ def get_admin_activity(
                 related_entity_type="claim",
                 related_entity_id=c.id,
                 user_name=c_name,
-                campus=c.match.lost_item.campus if (c.match and c.match.lost_item) else None,
+                campus=item_campus,
             )
         )
 
@@ -704,10 +714,15 @@ def get_admin_claims(
     limit: int = 20,
 ) -> AdminClaimListResponse:
     """Lists ownership claims with claimant, finder, and verification details."""
-    q = db.query(Claim).join(Match, Claim.match_id == Match.id).join(LostItem, Match.lost_item_id == LostItem.id)
+    q = (
+        db.query(Claim)
+        .outerjoin(Match, Claim.match_id == Match.id)
+        .outerjoin(LostItem, or_(Match.lost_item_id == LostItem.id, Claim.lost_item_id == LostItem.id))
+        .outerjoin(FoundItem, or_(Match.found_item_id == FoundItem.id, Claim.found_item_id == FoundItem.id))
+    )
 
     if campus_scope and campus_scope.strip() and campus_scope.strip().upper() != "ALL":
-        q = q.filter(LostItem.campus == campus_scope.strip())
+        q = q.filter(or_(LostItem.campus == campus_scope.strip(), FoundItem.campus == campus_scope.strip()))
 
     if status_filter and status_filter.strip() and status_filter.strip().upper() != "ALL":
         q = q.filter(Claim.status == status_filter.strip().upper())
@@ -717,7 +732,9 @@ def get_admin_claims(
 
     items = []
     for c in claims:
-        finder = c.match.found_item.user if (c.match and c.match.found_item) else None
+        target_found = c.found_item or (c.match.found_item if c.match else None)
+        target_lost = c.lost_item or (c.match.lost_item if c.match else None)
+        finder = target_found.user if target_found else None
         items.append(
             AdminClaimItem(
                 id=c.id,
@@ -727,10 +744,10 @@ def get_admin_claims(
                 claimant_email=c.claimant.email if c.claimant else "",
                 finder_id=finder.id if finder else None,
                 finder_name=finder.full_name if finder else None,
-                lost_item_id=c.match.lost_item_id if c.match else 0,
-                lost_item_title=c.match.lost_item.title if (c.match and c.match.lost_item) else "Item",
-                found_item_id=c.match.found_item_id if c.match else 0,
-                found_item_title=c.match.found_item.title if (c.match and c.match.found_item) else "Item",
+                lost_item_id=target_lost.id if target_lost else 0,
+                lost_item_title=target_lost.title if target_lost else "Direct Claim (No Lost Report)",
+                found_item_id=target_found.id if target_found else 0,
+                found_item_title=target_found.title if target_found else "Item",
                 verification_details=c.verification_details,
                 additional_message=c.additional_message,
                 status=c.status,

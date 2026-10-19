@@ -11,10 +11,12 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
  * so the UI can distinguish "bad credentials" from "server unreachable".
  */
 export class AuthError extends Error {
-  constructor(message, status) {
+  constructor(message, status, code = null, data = null) {
     super(message);
     this.name = "AuthError";
     this.status = status;
+    this.code = code;
+    this.data = data;
   }
 }
 
@@ -169,11 +171,197 @@ export async function getCurrentUser(token) {
 }
 
 /**
- * Placeholder for Google OAuth. Point this at your backend's OAuth
- * redirect/callback endpoint once it exists.
+ * POST /auth/google against FastAPI backend.
+ * Authenticates user using Google ID token credential.
+ *
+ * @param {{ credential: string, campus?: string, department?: string }} params
+ * @returns {Promise<{ accessToken: string, user: object }>}
+ */
+export async function loginWithGoogle({ credential, campus, department }) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        credential,
+        campus: campus || null,
+        department: department || null,
+      }),
+    });
+  } catch {
+    throw new AuthError(
+      "Can\u2019t reach Tracelt right now. Check your connection and try again.",
+      0,
+    );
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    // Non-JSON response
+  }
+
+  if (!response.ok) {
+    const detail = data?.detail;
+    let message = "Google authentication failed. Please try again.";
+    let code = null;
+
+    if (typeof detail === "object" && detail !== null) {
+      code = detail.code;
+      message = detail.message || message;
+    } else if (typeof detail === "string") {
+      message = detail;
+    }
+
+    throw new AuthError(message, response.status, code, data?.detail);
+  }
+
+  return {
+    accessToken: data?.access_token,
+    user: data?.user ?? null,
+  };
+}
+
+/**
+ * POST /auth/google/link-with-password against FastAPI backend.
+ * Links an existing email/password account to a Google account after password verification.
+ *
+ * @param {{ email: string, password: string, credential: string }} params
+ * @returns {Promise<{ accessToken: string, user: object }>}
+ */
+export async function linkGoogleWithPassword({ email, password, credential }) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/google/link-with-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, credential }),
+    });
+  } catch {
+    throw new AuthError(
+      "Can\u2019t reach Tracelt right now. Check your connection and try again.",
+      0,
+    );
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    // Non-JSON response
+  }
+
+  if (!response.ok) {
+    const message =
+      (typeof data?.detail === "string" ? data.detail : data?.detail?.message) ||
+      "Failed to link Google account. Please verify your password and try again.";
+    throw new AuthError(message, response.status, data?.detail?.code, data?.detail);
+  }
+
+  return {
+    accessToken: data?.access_token,
+    user: data?.user ?? null,
+  };
+}
+
+/**
+ * POST /auth/google/link against FastAPI backend using Bearer token.
+ * Links a Google ID to the current authenticated user's profile.
+ *
+ * @param {{ credential: string, token: string }} params
+ * @returns {Promise<object>}
+ */
+export async function linkGoogleAccount({ credential, token }) {
+  if (!token) {
+    throw new AuthError("No authentication token provided.", 401);
+  }
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/google/link`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ credential }),
+    });
+  } catch {
+    throw new AuthError(
+      "Can\u2019t reach Tracelt right now. Check your connection and try again.",
+      0,
+    );
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    // Non-JSON
+  }
+
+  if (!response.ok) {
+    const message =
+      (typeof data?.detail === "string" ? data.detail : data?.detail?.message) ||
+      "Unable to link Google account.";
+    throw new AuthError(message, response.status);
+  }
+
+  return data;
+}
+
+/**
+ * POST /auth/google/unlink against FastAPI backend using Bearer token.
+ * Unlinks the Google ID from the current authenticated user's profile.
+ *
+ * @param {{ token: string }} params
+ * @returns {Promise<object>}
+ */
+export async function unlinkGoogleAccount({ token }) {
+  if (!token) {
+    throw new AuthError("No authentication token provided.", 401);
+  }
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/google/unlink`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+  } catch {
+    throw new AuthError(
+      "Can\u2019t reach Tracelt right now. Check your connection and try again.",
+      0,
+    );
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    // Non-JSON
+  }
+
+  if (!response.ok) {
+    const message =
+      (typeof data?.detail === "string" ? data.detail : data?.detail?.message) ||
+      "Unable to unlink Google account.";
+    throw new AuthError(message, response.status);
+  }
+
+  return data;
+}
+
+/**
+ * Backward compatibility helper for initiating Google login.
  */
 export function startGoogleLogin() {
-  window.location.href = `${API_BASE_URL}/auth/google`;
+  console.warn("startGoogleLogin invoked without Google Identity Services initialized.");
 }
 
 /**

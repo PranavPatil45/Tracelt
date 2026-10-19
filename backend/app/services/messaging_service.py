@@ -51,6 +51,8 @@ def get_or_create_conversation_for_claim(
         .options(
             joinedload(Claim.match).joinedload(Match.lost_item),
             joinedload(Claim.match).joinedload(Match.found_item),
+            joinedload(Claim.found_item),
+            joinedload(Claim.lost_item),
             joinedload(Claim.claimant),
         )
         .first()
@@ -62,14 +64,15 @@ def get_or_create_conversation_for_claim(
             detail="Claim record not found.",
         )
 
-    if not claim.match or not claim.match.found_item:
+    target_found_item = claim.found_item or (claim.match.found_item if claim.match else None)
+    if not target_found_item:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Associated item report is missing or corrupted.",
         )
 
     claimant_id = claim.claimant_id
-    finder_id = claim.match.found_item.user_id
+    finder_id = target_found_item.user_id
 
     if current_user.id not in (claimant_id, finder_id):
         raise HTTPException(
@@ -138,8 +141,8 @@ def format_conversation_summary(conv: Conversation, current_user: User, db: Sess
     """Constructs a front-end friendly summary of a conversation."""
     claim = conv.claim
     match = conv.match
-    lost_item = match.lost_item if match else None
-    found_item = match.found_item if match else None
+    lost_item = (match.lost_item if match else None) or (claim.lost_item if claim else None)
+    found_item = (match.found_item if match else None) or (claim.found_item if claim else None)
 
     # Other participant
     other_user = None
@@ -280,8 +283,8 @@ def get_conversation_detail(db: Session, conversation_id: int, current_user: Use
         for m in sorted_msgs
     ]
 
-    lost_item = conv.match.lost_item if conv.match else None
-    found_item = conv.match.found_item if conv.match else None
+    lost_item = (conv.match.lost_item if conv.match else None) or (conv.claim.lost_item if conv.claim else None)
+    found_item = (conv.match.found_item if conv.match else None) or (conv.claim.found_item if conv.claim else None)
 
     return {
         "id": conv.id,

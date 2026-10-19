@@ -292,7 +292,11 @@ export default function AdminMatches() {
                   </span>
                   <div style={{ marginTop: "0.5rem" }}>
                     <Link
-                      to={`/lost-items/${selectedMatch.lost_item_id}`}
+                      to={{
+                        pathname: `/lost-items/${selectedMatch.lost_item_id}`,
+                        search: '?from=admin-portal',
+                      }}
+                      state={{ from: 'admin-portal' }}
                       style={{ color: "var(--cyan)", fontSize: "0.82rem" }}
                     >
                       Open Lost Details &rarr;
@@ -327,7 +331,11 @@ export default function AdminMatches() {
                   </span>
                   <div style={{ marginTop: "0.5rem" }}>
                     <Link
-                      to={`/found-items/${selectedMatch.found_item_id}`}
+                      to={{
+                        pathname: `/found-items/${selectedMatch.found_item_id}`,
+                        search: '?from=admin-portal',
+                      }}
+                      state={{ from: 'admin-portal' }}
                       style={{ color: "var(--cyan)", fontSize: "0.82rem" }}
                     >
                       Open Found Details &rarr;

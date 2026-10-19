@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     VISUAL_CANDIDATE_THRESHOLD: int = 50
     MAX_VISUAL_COMPARISONS: int = 5
 
+    # Google OAuth / Identity Services
+    GOOGLE_CLIENT_ID: Optional[str] = None
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def resolve_database_url(cls, v: Union[str, None]) -> str:

@@ -364,7 +364,11 @@ export default function HistoryPage() {
                           </Link>
                         ) : (
                           <Link
-                            to={item.type === 'LOST' ? `/lost-items/${item.id}` : `/found-items/${item.id}`}
+                            to={{
+                              pathname: item.type === 'LOST' ? `/lost-items/${item.id}` : `/found-items/${item.id}`,
+                              search: '?from=history',
+                            }}
+                            state={{ from: 'history' }}
                             className="history-action-btn"
                           >
                             <span>View Report</span>

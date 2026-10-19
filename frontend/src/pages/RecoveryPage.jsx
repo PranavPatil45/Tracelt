@@ -412,7 +412,11 @@ export default function RecoveryPage() {
                           Lost Report
                         </span>
                         <Link
-                          to={`/lost-items/${recovery.lost_item.id}`}
+                          to={{
+                            pathname: `/lost-items/${recovery.lost_item.id}`,
+                            search: '?from=history',
+                          }}
+                          state={{ from: 'history' }}
                           style={{ color: 'var(--cyan, #45d6e0)', fontSize: '12px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         >
                           View <ExternalLink size={12} />
@@ -468,7 +472,11 @@ export default function RecoveryPage() {
                           Found Report
                         </span>
                         <Link
-                          to={`/found-items/${recovery.found_item.id}`}
+                          to={{
+                            pathname: `/found-items/${recovery.found_item.id}`,
+                            search: '?from=history',
+                          }}
+                          state={{ from: 'history' }}
                           style={{ color: 'var(--cyan, #45d6e0)', fontSize: '12px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         >
                           View <ExternalLink size={12} />

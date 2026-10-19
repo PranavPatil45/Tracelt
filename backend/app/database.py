@@ -86,6 +86,16 @@ def init_db():
             if columns and "profile_image" not in columns:
                 conn.exec_driver_sql("ALTER TABLE users ADD COLUMN profile_image VARCHAR(500)")
                 conn.commit()
+            if columns and "google_sub" not in columns:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN google_sub VARCHAR(255)")
+                conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub ON users(google_sub)")
+                conn.commit()
+            if columns and "auth_provider" not in columns:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(50) DEFAULT 'email' NOT NULL")
+                conn.commit()
+            if columns and "email_verified" not in columns:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0 NOT NULL")
+                conn.commit()
 
             # Matches table schema evolution for Gemini visual matching
             match_result = conn.exec_driver_sql("PRAGMA table_info(matches)")
@@ -100,6 +110,167 @@ def init_db():
                 if "visual_reasons" not in match_cols:
                     conn.exec_driver_sql("ALTER TABLE matches ADD COLUMN visual_reasons JSON")
                 conn.commit()
+
+            # Claims table schema evolution for direct claims
+            claim_result = conn.exec_driver_sql("PRAGMA table_info(claims)")
+            claim_cols_info = claim_result.fetchall()
+            claim_cols = [row[1] for row in claim_cols_info]
+            if claim_cols:
+                match_id_info = next((row for row in claim_cols_info if row[1] == "match_id"), None)
+                if match_id_info and match_id_info[3] == 1:
+                    logger.info("Migrating claims table to make match_id nullable and add found_item_id/lost_item_id...")
+                    conn.exec_driver_sql("PRAGMA foreign_keys=OFF")
+                    conn.exec_driver_sql("BEGIN TRANSACTION")
+                    conn.exec_driver_sql("""
+                        CREATE TABLE claims_new (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            match_id INTEGER,
+                            found_item_id INTEGER,
+                            lost_item_id INTEGER,
+                            claimant_id INTEGER NOT NULL,
+                            verification_details TEXT NOT NULL,
+                            additional_message TEXT,
+                            status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+                            reviewed_by INTEGER,
+                            reviewed_at DATETIME,
+                            reviewer_notes TEXT,
+                            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME,
+                            FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE,
+                            FOREIGN KEY(found_item_id) REFERENCES found_items(id) ON DELETE CASCADE,
+                            FOREIGN KEY(lost_item_id) REFERENCES lost_items(id) ON DELETE SET NULL,
+                            FOREIGN KEY(claimant_id) REFERENCES users(id) ON DELETE CASCADE,
+                            FOREIGN KEY(reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+                        )
+                    """)
+                    conn.exec_driver_sql("""
+                        INSERT INTO claims_new (
+                            id, match_id, claimant_id, verification_details, additional_message,
+                            status, reviewed_by, reviewed_at, reviewer_notes, created_at, updated_at
+                        )
+                        SELECT id, match_id, claimant_id, verification_details, additional_message,
+                            status, reviewed_by, reviewed_at, reviewer_notes, created_at, updated_at
+                        FROM claims
+                    """)
+                    conn.exec_driver_sql("""
+                        UPDATE claims_new
+                        SET found_item_id = (SELECT found_item_id FROM matches WHERE matches.id = claims_new.match_id),
+                            lost_item_id = (SELECT lost_item_id FROM matches WHERE matches.id = claims_new.match_id)
+                        WHERE match_id IS NOT NULL
+                    """)
+                    conn.exec_driver_sql("DROP TABLE claims")
+                    conn.exec_driver_sql("ALTER TABLE claims_new RENAME TO claims")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_claims_id ON claims (id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_claims_match_id ON claims (match_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_claims_found_item_id ON claims (found_item_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_claims_lost_item_id ON claims (lost_item_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_claims_claimant_id ON claims (claimant_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_claims_status ON claims (status)")
+                    conn.commit()
+                    conn.exec_driver_sql("PRAGMA foreign_keys=ON")
+                else:
+                    if "found_item_id" not in claim_cols:
+                        conn.exec_driver_sql("ALTER TABLE claims ADD COLUMN found_item_id INTEGER REFERENCES found_items(id) ON DELETE CASCADE")
+                        conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_claims_found_item_id ON claims (found_item_id)")
+                        conn.commit()
+                    if "lost_item_id" not in claim_cols:
+                        conn.exec_driver_sql("ALTER TABLE claims ADD COLUMN lost_item_id INTEGER REFERENCES lost_items(id) ON DELETE SET NULL")
+                        conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_claims_lost_item_id ON claims (lost_item_id)")
+                        conn.commit()
+
+            # Recoveries table schema evolution for direct claim recovery
+            recovery_result = conn.exec_driver_sql("PRAGMA table_info(recoveries)")
+            rec_cols_info = recovery_result.fetchall()
+            rec_cols = [row[1] for row in rec_cols_info]
+            if rec_cols:
+                match_id_info = next((row for row in rec_cols_info if row[1] == "match_id"), None)
+                lost_id_info = next((row for row in rec_cols_info if row[1] == "lost_item_id"), None)
+                if (match_id_info and match_id_info[3] == 1) or (lost_id_info and lost_id_info[3] == 1):
+                    logger.info("Migrating recoveries table to make match_id and lost_item_id nullable...")
+                    conn.exec_driver_sql("PRAGMA foreign_keys=OFF")
+                    conn.exec_driver_sql("BEGIN TRANSACTION")
+                    conn.exec_driver_sql("""
+                        CREATE TABLE recoveries_new (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            claim_id INTEGER NOT NULL UNIQUE,
+                            match_id INTEGER,
+                            lost_item_id INTEGER,
+                            found_item_id INTEGER NOT NULL,
+                            claimant_id INTEGER NOT NULL,
+                            finder_id INTEGER NOT NULL,
+                            status VARCHAR(50) NOT NULL DEFAULT 'RETURN_PENDING',
+                            return_location VARCHAR(255),
+                            return_notes TEXT,
+                            returned_at DATETIME,
+                            confirmed_at DATETIME,
+                            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME,
+                            FOREIGN KEY(claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                            FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE SET NULL,
+                            FOREIGN KEY(lost_item_id) REFERENCES lost_items(id) ON DELETE SET NULL,
+                            FOREIGN KEY(found_item_id) REFERENCES found_items(id) ON DELETE CASCADE,
+                            FOREIGN KEY(claimant_id) REFERENCES users(id) ON DELETE CASCADE,
+                            FOREIGN KEY(finder_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
+                    """)
+                    conn.exec_driver_sql("""
+                        INSERT INTO recoveries_new (
+                            id, claim_id, match_id, lost_item_id, found_item_id, claimant_id, finder_id,
+                            status, return_location, return_notes, returned_at, confirmed_at, created_at, updated_at
+                        )
+                        SELECT id, claim_id, match_id, lost_item_id, found_item_id, claimant_id, finder_id,
+                            status, return_location, return_notes, returned_at, confirmed_at, created_at, updated_at
+                        FROM recoveries
+                    """)
+                    conn.exec_driver_sql("DROP TABLE recoveries")
+                    conn.exec_driver_sql("ALTER TABLE recoveries_new RENAME TO recoveries")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_recoveries_id ON recoveries (id)")
+                    conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS ix_recoveries_claim_id ON recoveries (claim_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_recoveries_match_id ON recoveries (match_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_recoveries_lost_item_id ON recoveries (lost_item_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_recoveries_found_item_id ON recoveries (found_item_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_recoveries_claimant_id ON recoveries (claimant_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_recoveries_finder_id ON recoveries (finder_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_recoveries_status ON recoveries (status)")
+                    conn.commit()
+                    conn.exec_driver_sql("PRAGMA foreign_keys=ON")
+
+            # Conversations table schema evolution for direct claims
+            conv_result = conn.exec_driver_sql("PRAGMA table_info(conversations)")
+            conv_cols_info = conv_result.fetchall()
+            conv_cols = [row[1] for row in conv_cols_info]
+            if conv_cols:
+                match_id_info = next((row for row in conv_cols_info if row[1] == "match_id"), None)
+                if match_id_info and match_id_info[3] == 1:
+                    logger.info("Migrating conversations table to make match_id nullable...")
+                    conn.exec_driver_sql("PRAGMA foreign_keys=OFF")
+                    conn.exec_driver_sql("BEGIN TRANSACTION")
+                    conn.exec_driver_sql("""
+                        CREATE TABLE conversations_new (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            claim_id INTEGER NOT NULL UNIQUE,
+                            match_id INTEGER,
+                            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME,
+                            last_message_at DATETIME,
+                            FOREIGN KEY(claim_id) REFERENCES claims(id) ON DELETE CASCADE,
+                            FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE SET NULL
+                        )
+                    """)
+                    conn.exec_driver_sql("""
+                        INSERT INTO conversations_new (
+                            id, claim_id, match_id, created_at, updated_at, last_message_at
+                        )
+                        SELECT id, claim_id, match_id, created_at, updated_at, last_message_at
+                        FROM conversations
+                    """)
+                    conn.exec_driver_sql("DROP TABLE conversations")
+                    conn.exec_driver_sql("ALTER TABLE conversations_new RENAME TO conversations")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_conversations_id ON conversations (id)")
+                    conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS ix_conversations_claim_id ON conversations (claim_id)")
+                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_conversations_match_id ON conversations (match_id)")
+                    conn.commit()
+                    conn.exec_driver_sql("PRAGMA foreign_keys=ON")
         except Exception as e:
             logger.warning(f"Database migration check warning: {e}")
 

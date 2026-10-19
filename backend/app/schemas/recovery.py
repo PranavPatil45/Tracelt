@@ -58,7 +58,7 @@ class RecoveryItemSummary(BaseModel):
 class RecoveryResponse(BaseModel):
     id: int
     claim_id: int
-    match_id: int
+    match_id: Optional[int] = None
     status: str  # RETURN_PENDING, RETURNED, RECOVERED, CANCELLED
     return_location: Optional[str] = None
     return_notes: Optional[str] = None

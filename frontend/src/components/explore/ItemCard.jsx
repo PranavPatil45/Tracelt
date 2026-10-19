@@ -105,7 +105,14 @@ export default function ItemCard({ item, currentUserId }) {
             {item.status}
           </span>
 
-          <Link to={detailUrl} className="explore-card__btn">
+          <Link
+            to={{
+              pathname: detailUrl,
+              search: '?from=explore',
+            }}
+            state={{ from: 'explore' }}
+            className="explore-card__btn"
+          >
             View Details <ArrowRight size={13} />
           </Link>
         </div>

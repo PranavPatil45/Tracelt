@@ -11,7 +11,19 @@ class Claim(Base):
     match_id = Column(
         Integer,
         ForeignKey("matches.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
+        index=True,
+    )
+    found_item_id = Column(
+        Integer,
+        ForeignKey("found_items.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    lost_item_id = Column(
+        Integer,
+        ForeignKey("lost_items.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     claimant_id = Column(
@@ -44,6 +56,8 @@ class Claim(Base):
     match = relationship("Match", backref="claims")
     claimant = relationship("User", foreign_keys=[claimant_id], backref="submitted_claims")
     reviewer = relationship("User", foreign_keys=[reviewed_by], backref="reviewed_claims")
+    found_item = relationship("FoundItem", foreign_keys=[found_item_id], backref="claims")
+    lost_item = relationship("LostItem", foreign_keys=[lost_item_id], backref="claims")
 
     def __repr__(self):
-        return f"<Claim #{self.id}: Match #{self.match_id} by User #{self.claimant_id} ({self.status})>"
+        return f"<Claim #{self.id}: Item #{self.found_item_id} (Match #{self.match_id}) by User #{self.claimant_id} ({self.status})>"

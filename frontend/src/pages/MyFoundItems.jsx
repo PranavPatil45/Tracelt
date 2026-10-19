@@ -284,7 +284,11 @@ export default function MyFoundItems() {
 
                     <div className="found-card__actions">
                       <Link
-                        to={`/found-items/${item.id}`}
+                        to={{
+                          pathname: `/found-items/${item.id}`,
+                          search: '?from=found-items',
+                        }}
+                        state={{ from: 'found-items' }}
                         className="found-action-btn found-action-btn--view"
                       >
                         <Eye size={14} /> View

@@ -30,9 +30,18 @@ def create_recovery_for_claim(
     if existing:
         return existing
 
-    lost_id = claim.match.lost_item_id if claim.match else claim.match_id
-    found_id = claim.match.found_item_id if claim.match else claim.match_id
-    finder_id = claim.match.found_item.user_id if claim.match and claim.match.found_item else 0
+    lost_id = claim.lost_item_id or (claim.match.lost_item_id if claim.match else None)
+    found_id = claim.found_item_id or (claim.match.found_item_id if claim.match else None)
+
+    finder_id = 0
+    if claim.found_item and claim.found_item.user_id:
+        finder_id = claim.found_item.user_id
+    elif claim.match and claim.match.found_item and claim.match.found_item.user_id:
+        finder_id = claim.match.found_item.user_id
+    elif found_id:
+        f_item = db.query(FoundItem).filter(FoundItem.id == found_id).first()
+        if f_item:
+            finder_id = f_item.user_id
 
     recovery = Recovery(
         claim_id=claim.id,
@@ -101,10 +110,14 @@ def build_timeline_steps(recovery: Recovery) -> List[Dict[str, Any]]:
     steps = [
         {
             "key": "match_found",
-            "title": "Match Correlated",
+            "title": "Match Correlated" if recovery.match else "Item Identified",
             "status": "completed",
             "timestamp": match_time,
-            "description": "Matching engine detected high-confidence match on campus.",
+            "description": (
+                "Matching engine detected high-confidence match on campus."
+                if recovery.match
+                else "Item identified and selected directly on campus."
+            ),
         },
         {
             "key": "claim_submitted",
@@ -369,11 +382,11 @@ def get_user_history(
     clean_type = (role or type_filter or "all").lower().strip()
     clean_status = (status or status_filter or "all").lower().strip()
 
-    # User's recoveries as Claimant (Lost items)
+    # User's recoveries as Claimant (Lost items or directly claimed found items)
     claimant_recoveries = (
         db.query(Recovery)
         .filter(Recovery.claimant_id == current_user.id)
-        .options(joinedload(Recovery.lost_item))
+        .options(joinedload(Recovery.lost_item), joinedload(Recovery.found_item))
         .all()
     )
 
@@ -405,7 +418,8 @@ def get_user_history(
     # 1. From Claimant Recoveries
     for rec in claimant_recoveries:
         lost = rec.lost_item
-        key = f"lost_{lost.id if lost else rec.lost_item_id}"
+        found = rec.found_item
+        key = f"lost_{lost.id}" if lost else f"claimant_rec_{rec.id}"
         if key in seen_keys:
             continue
         seen_keys.add(key)
@@ -413,15 +427,22 @@ def get_user_history(
         status_label = "RECOVERED" if rec.status == "RECOVERED" else rec.status
         completed_date = rec.confirmed_at or rec.returned_at or rec.created_at
 
+        item_id = lost.id if lost else (found.id if found else (rec.lost_item_id or rec.found_item_id))
+        item_title = lost.title if lost else (found.title if found else "Claimed Item")
+        item_category = lost.category if lost else (found.category if found else "General")
+        item_location = lost.location if lost else (found.location if found else (rec.return_location or "Campus"))
+        item_date = lost.lost_date if lost else (found.found_date if found else rec.created_at.strftime("%Y-%m-%d"))
+        item_image = lost.image_url if lost else (found.image_url if found else None)
+
         history_entries.append({
-            "id": lost.id if lost else rec.lost_item_id,
+            "id": item_id,
             "type": "LOST",
-            "title": lost.title if lost else "Lost Item",
-            "category": lost.category if lost else "General",
-            "location": lost.location if lost else "Campus",
+            "title": item_title,
+            "category": item_category,
+            "location": item_location,
             "status": status_label,
-            "date": lost.lost_date if lost else rec.created_at.strftime("%Y-%m-%d"),
-            "image_url": lost.image_url if lost else None,
+            "date": item_date,
+            "image_url": item_image,
             "recovery_id": rec.id,
             "completed_at": completed_date,
             "return_location": rec.return_location,

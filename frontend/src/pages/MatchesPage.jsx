@@ -441,7 +441,11 @@ export default function MatchesPage() {
                           </div>
 
                           <Link
-                            to={`/lost-items/${m.lost_item?.id}`}
+                            to={{
+                              pathname: `/lost-items/${m.lost_item?.id}`,
+                              search: '?from=matches',
+                            }}
+                            state={{ from: 'matches' }}
                             className="btn btn-secondary comparison-view-btn"
                           >
                             <span>View Lost Report</span>
@@ -512,7 +516,11 @@ export default function MatchesPage() {
                           </div>
 
                           <Link
-                            to={`/found-items/${m.found_item?.id}`}
+                            to={{
+                              pathname: `/found-items/${m.found_item?.id}`,
+                              search: '?from=matches',
+                            }}
+                            state={{ from: 'matches' }}
                             className="btn btn-secondary comparison-view-btn"
                           >
                             <span>View Found Report</span>

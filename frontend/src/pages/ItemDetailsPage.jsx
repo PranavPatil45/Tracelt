@@ -185,12 +185,49 @@ export default function ItemDetailsPage({ initialType }) {
     }
   }
 
-  // Smart back navigation
+  const searchParams = new URLSearchParams(location.search)
+  const fromParam = searchParams.get('from')
+  const fromState = location.state?.from
+
+  // Determine active navigation section with sensible fallback
+  const determineActiveTab = () => {
+    const source = fromState || fromParam
+    if (source) {
+      if (source === 'explore') return 'explore'
+      if (source === 'lost-items' || source === 'my-lost-items') return 'lost-items'
+      if (source === 'found-items' || source === 'my-found-items') return 'found-items'
+      if (source === 'admin' || source === 'admin-portal') return 'admin-portal'
+      if (['matches', 'claims', 'history', 'dashboard', 'messages'].includes(source)) return source
+    }
+    // Sensible fallback when opened directly or refreshed without context
+    if (location.pathname.startsWith('/items/')) {
+      return 'explore'
+    }
+    if (location.pathname.startsWith('/lost-items')) {
+      return 'lost-items'
+    }
+    if (location.pathname.startsWith('/found-items')) {
+      return 'found-items'
+    }
+    return effectiveType === 'FOUND' ? 'found-items' : 'lost-items'
+  }
+
+  const activeNavTab = determineActiveTab()
+
+  // Smart back navigation preserving source section
   function handleBack() {
     if (window.history.length > 2) {
       navigate(-1)
     } else {
-      navigate('/explore')
+      const source = fromState || fromParam
+      if (source === 'lost-items' || source === 'my-lost-items') navigate('/lost-items')
+      else if (source === 'found-items' || source === 'my-found-items') navigate('/found-items')
+      else if (source === 'matches') navigate('/matches')
+      else if (source === 'claims') navigate('/claims')
+      else if (source === 'history') navigate('/history')
+      else if (source === 'messages') navigate('/messages')
+      else if (source === 'admin' || source === 'admin-portal') navigate('/admin')
+      else navigate('/explore')
     }
   }
 
@@ -205,13 +242,14 @@ export default function ItemDetailsPage({ initialType }) {
 
   if (!user) return null
 
-  const isLost = item?.type === 'LOST'
+  const isLost = (item?.type || effectiveType).toUpperCase() === 'LOST'
+  const isFound = (item?.type || effectiveType).toUpperCase() === 'FOUND'
 
   return (
     <div className="dashboard-app">
       {/* Sidebar Navigation */}
       <Sidebar
-        activeTab={effectiveType === 'FOUND' ? 'found-items' : 'lost-items'}
+        activeTab={activeNavTab}
         setActiveTab={(tab) => navigate(tab === 'dashboard' ? '/dashboard' : `/${tab}`)}
         user={user}
         logout={logout}
@@ -244,12 +282,41 @@ export default function ItemDetailsPage({ initialType }) {
               </button>
 
               <nav className="item-breadcrumbs" aria-label="Breadcrumb">
-                <Link to="/explore" className="item-breadcrumb-link">
-                  Explore
+                <Link
+                  to={
+                    activeNavTab === 'explore'
+                      ? '/explore'
+                      : activeNavTab === 'lost-items'
+                      ? '/lost-items'
+                      : activeNavTab === 'found-items'
+                      ? '/found-items'
+                      : activeNavTab === 'admin-portal'
+                      ? '/admin'
+                      : `/${activeNavTab}`
+                  }
+                  className="item-breadcrumb-link"
+                >
+                  {activeNavTab === 'explore'
+                    ? 'Explore'
+                    : activeNavTab === 'lost-items'
+                    ? 'My Lost Items'
+                    : activeNavTab === 'found-items'
+                    ? 'My Found Items'
+                    : activeNavTab === 'matches'
+                    ? 'Matches'
+                    : activeNavTab === 'claims'
+                    ? 'Claims'
+                    : activeNavTab === 'history'
+                    ? 'History'
+                    : activeNavTab === 'messages'
+                    ? 'Messages'
+                    : activeNavTab === 'admin-portal'
+                    ? 'Admin Portal'
+                    : 'Explore'}
                 </Link>
                 <ChevronRight size={14} className="item-breadcrumb-sep" />
                 <span className="item-breadcrumb-curr">
-                  {effectiveType === 'LOST' ? 'Lost Items' : 'Found Items'}
+                  {isLost ? 'Lost Item Report' : 'Found Item Report'}
                 </span>
                 {item && (
                   <>
@@ -319,7 +386,7 @@ export default function ItemDetailsPage({ initialType }) {
                       <div className="item-matches-list">
                         {itemMatches.map((m) => {
                           const otherItem = effectiveType === 'LOST' ? m.found_item : m.lost_item
-                          const otherUrl = effectiveType === 'LOST' ? `/found-items/${otherItem?.id}` : `/lost-items/${otherItem?.id}`
+                          const otherPath = effectiveType === 'LOST' ? `/found-items/${otherItem?.id}` : `/lost-items/${otherItem?.id}`
 
                           return (
                             <div key={m.id} className="item-match-preview-card">
@@ -340,7 +407,14 @@ export default function ItemDetailsPage({ initialType }) {
                                 </ul>
                               )}
 
-                              <Link to={otherUrl} className="item-match-preview-link">
+                              <Link
+                                to={{
+                                  pathname: otherPath,
+                                  search: `?from=${activeNavTab}`,
+                                }}
+                                state={{ from: activeNavTab }}
+                                className="item-match-preview-link"
+                              >
                                 <span>View {effectiveType === 'LOST' ? 'Found' : 'Lost'} Report</span>
                                 <ChevronRight size={13} />
                               </Link>
@@ -392,8 +466,8 @@ export default function ItemDetailsPage({ initialType }) {
                           <span>Delete Report</span>
                         </button>
                       </div>
-                    ) : (
-                      /* Non-Owner Claim Action */
+                    ) : isFound ? (
+                      /* Non-Owner Claim Action (Found Items Only) */
                       <div className="item-claim-action-group">
                         <button
                           type="button"
@@ -401,12 +475,10 @@ export default function ItemDetailsPage({ initialType }) {
                           onClick={() => setClaimModalOpen(true)}
                         >
                           <HeartHandshake size={18} />
-                          <span>
-                            {isLost ? 'This Might Be Mine' : 'This Might Be My Item'}
-                          </span>
+                          <span>This Might Be My Item</span>
                         </button>
                       </div>
-                    )}
+                    ) : null}
 
                     {/* Share / Copy Link Button */}
                     <button
@@ -607,7 +679,7 @@ export default function ItemDetailsPage({ initialType }) {
       />
 
       {/* Claim & Verification Modal */}
-      {item && (
+      {item && isFound && (
         <ClaimActionModal
           item={item}
           isOpen={claimModalOpen}

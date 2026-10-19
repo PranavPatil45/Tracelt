@@ -60,6 +60,53 @@ export async function submitClaim(matchId, payload, token) {
 }
 
 /**
+ * Submit a direct ownership claim for a found item (without requiring an automated match).
+ *
+ * @param {number|string} foundItemId
+ * @param {object} payload
+ * @param {string} payload.verification_details
+ * @param {string} [payload.additional_message]
+ * @param {string} token
+ * @returns {Promise<object>} Created Claim
+ */
+export async function submitDirectClaim(foundItemId, payload, token) {
+  let response
+  try {
+    response = await fetch(`${API_BASE_URL}/found-items/${foundItemId}/claim`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    throw new ClaimApiError('Unable to connect to claim service. Please check your connection.', 0)
+  }
+
+  let data = null
+  try {
+    data = await response.json()
+  } catch {
+    // Non-JSON
+  }
+
+  if (!response.ok) {
+    let errorMsg = 'Failed to submit direct claim request.'
+    if (data?.detail) {
+      if (Array.isArray(data.detail)) {
+        errorMsg = data.detail.map((d) => d.msg || d.detail).join('; ')
+      } else {
+        errorMsg = data.detail
+      }
+    }
+    throw new ClaimApiError(errorMsg, response.status, data)
+  }
+
+  return data
+}
+
+/**
  * Fetch claims submitted by the current user (Claimant view).
  *
  * @param {object} [filters]
@@ -262,6 +309,32 @@ export async function getActiveClaimForMatch(matchId, token) {
 
   try {
     const response = await fetch(`${API_BASE_URL}/matches/${matchId}/active-claim`, {
+      method: 'GET',
+      headers,
+    })
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+
+  return { has_active_claim: false, claim: null }
+}
+
+/**
+ * Check if an active claim already exists on a given found item.
+ *
+ * @param {number|string} foundItemId
+ * @param {string} token
+ * @returns {Promise<{ has_active_claim: boolean, claim: object|null }>}
+ */
+export async function getActiveClaimForFoundItem(foundItemId, token) {
+  const headers = {}
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/found-items/${foundItemId}/active-claim`, {
       method: 'GET',
       headers,
     })

@@ -36,6 +36,9 @@ class UserOut(UserBase):
     phone: Optional[str] = None
     bio: Optional[str] = None
     profile_image: Optional[str] = None
+    google_sub: Optional[str] = None
+    auth_provider: Optional[str] = "email"
+    email_verified: Optional[bool] = False
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -45,8 +48,29 @@ class UserOut(UserBase):
     def name(self) -> str:
         return self.full_name
 
+    @computed_field
+    @property
+    def is_google_linked(self) -> bool:
+        return bool(self.google_sub)
+
     class Config:
         from_attributes = True
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: str = Field(..., min_length=1, description="Google ID Token issued by Google Identity Services")
+    campus: Optional[str] = Field(None, max_length=255)
+    department: Optional[str] = Field(None, max_length=255)
+
+
+class GoogleLinkPasswordRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=1)
+    credential: str = Field(..., min_length=1)
+
+
+class GoogleLinkRequest(BaseModel):
+    credential: str = Field(..., min_length=1)
 
 
 class Token(BaseModel):

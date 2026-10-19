@@ -17,14 +17,14 @@ class Recovery(Base):
     )
     match_id = Column(
         Integer,
-        ForeignKey("matches.id", ondelete="CASCADE"),
-        nullable=False,
+        ForeignKey("matches.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     lost_item_id = Column(
         Integer,
-        ForeignKey("lost_items.id", ondelete="CASCADE"),
-        nullable=False,
+        ForeignKey("lost_items.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     found_item_id = Column(

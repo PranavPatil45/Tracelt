@@ -283,7 +283,11 @@ export default function MyLostItems() {
                   {/* Card Actions */}
                   <div className="lost-card__actions">
                     <Link
-                      to={`/lost-items/${item.id}`}
+                      to={{
+                        pathname: `/lost-items/${item.id}`,
+                        search: '?from=lost-items',
+                      }}
+                      state={{ from: 'lost-items' }}
                       className="btn-card-action btn-card-action--view"
                       title="View Details"
                     >
