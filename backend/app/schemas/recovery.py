@@ -28,6 +28,32 @@ class RecoveryReturnRequest(BaseModel):
         return trimmed or None
 
 
+class RecoveryDisputeRequest(BaseModel):
+    reason: str = Field(..., min_length=5, max_length=1000, description="Reason for raising recovery dispute.")
+
+
+class RecoveryOTPVerifyRequest(BaseModel):
+    otp: str = Field(..., min_length=4, max_length=10, description="The 6-digit handover OTP provided by the claimant.")
+    return_location: str = Field(..., max_length=255, description="Handover location verified during exchange.")
+    return_notes: Optional[str] = Field(None, max_length=1000, description="Optional notes on the physical handover.")
+
+    @field_validator("otp")
+    @classmethod
+    def validate_otp(cls, v: str) -> str:
+        trimmed = (v or "").strip()
+        if not trimmed:
+            raise ValueError("OTP cannot be blank.")
+        return trimmed
+
+
+class RecoveryOTPResponse(BaseModel):
+    otp: Optional[str] = None
+    expires_at: Optional[datetime] = None
+    expires_in_seconds: Optional[int] = None
+    is_active: bool = False
+    attempts_remaining: int = 5
+
+
 class TimelineStep(BaseModel):
     key: str
     title: str
@@ -59,6 +85,8 @@ class RecoveryResponse(BaseModel):
     id: int
     claim_id: int
     match_id: Optional[int] = None
+    claimant_id: Optional[int] = None
+    finder_id: Optional[int] = None
     status: str  # RETURN_PENDING, RETURNED, RECOVERED, CANCELLED
     return_location: Optional[str] = None
     return_notes: Optional[str] = None
@@ -74,6 +102,33 @@ class RecoveryResponse(BaseModel):
     can_mark_returned: bool = False
     can_confirm_recovery: bool = False
     timeline: List[TimelineStep] = []
+
+    # Hybrid Reviewer Workflow fields (Task 3)
+    review_status: str = "NOT_REQUIRED"
+    review_reason: Optional[str] = None
+    review_decision_notes: Optional[str] = None
+    review_decision_by: Optional[int] = None
+    review_decision_at: Optional[datetime] = None
+    handover_method: str = "DIRECT"
+    is_mandatory_review: bool = False
+    is_mandatory_otp: bool = False
+
+    # Handover OTP details
+    has_active_otp: bool = False
+    otp_attempts_left: int = 5
+    otp_expires_at: Optional[datetime] = None
+    otp_verified_at: Optional[datetime] = None
+
+    # Dispute status
+    dispute_reason: Optional[str] = None
+    disputed_by: Optional[int] = None
+    disputed_at: Optional[datetime] = None
+
+    # Role action capabilities
+    can_raise_dispute: bool = False
+    can_generate_otp: bool = False
+    can_verify_otp: bool = False
+    can_request_otp: bool = False
 
     class Config:
         from_attributes = True

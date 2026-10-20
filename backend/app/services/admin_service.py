@@ -710,6 +710,7 @@ def get_admin_claims(
     db: Session,
     campus_scope: Optional[str],
     status_filter: Optional[str] = None,
+    review_status_filter: Optional[str] = None,
     page: int = 1,
     limit: int = 20,
 ) -> AdminClaimListResponse:
@@ -727,14 +728,27 @@ def get_admin_claims(
     if status_filter and status_filter.strip() and status_filter.strip().upper() != "ALL":
         q = q.filter(Claim.status == status_filter.strip().upper())
 
+    if review_status_filter and review_status_filter.strip() and review_status_filter.strip().upper() != "ALL":
+        q = q.filter(Claim.review_status == review_status_filter.strip().upper())
+
     total = q.count()
     claims = q.order_by(desc(Claim.created_at)).offset((page - 1) * limit).limit(limit).all()
+
+    from app.services.claim_service import get_all_active_claims_for_found_item
+    active_claims_by_found_item = {}
 
     items = []
     for c in claims:
         target_found = c.found_item or (c.match.found_item if c.match else None)
         target_lost = c.lost_item or (c.match.lost_item if c.match else None)
         finder = target_found.user if target_found else None
+
+        f_id = target_found.id if target_found else 0
+        if f_id and f_id not in active_claims_by_found_item:
+            active_claims_by_found_item[f_id] = len(get_all_active_claims_for_found_item(db, f_id))
+
+        is_competing = bool(f_id and active_claims_by_found_item.get(f_id, 0) > 1 and c.status in ("PENDING", "UNDER_REVIEW", "APPROVED"))
+
         items.append(
             AdminClaimItem(
                 id=c.id,
@@ -755,6 +769,15 @@ def get_admin_claims(
                 reviewed_at=c.reviewed_at,
                 reviewer_notes=c.reviewer_notes,
                 created_at=c.created_at,
+                review_status=c.review_status or "NOT_REQUIRED",
+                review_reason=c.review_reason,
+                review_decision_notes=c.review_decision_notes,
+                review_decision_by_name=c.review_decider.full_name if c.review_decider else None,
+                review_decision_at=c.review_decision_at,
+                handover_method=c.handover_method or "DIRECT",
+                is_mandatory_review=bool(c.is_mandatory_review),
+                is_mandatory_otp=bool(c.is_mandatory_otp),
+                is_competing=is_competing,
             )
         )
 
@@ -765,17 +788,25 @@ def get_admin_recoveries(
     db: Session,
     campus_scope: Optional[str],
     status_filter: Optional[str] = None,
+    review_status_filter: Optional[str] = None,
     page: int = 1,
     limit: int = 20,
 ) -> AdminRecoveryListResponse:
     """Lists recovery tracking records."""
-    q = db.query(Recovery).join(LostItem, Recovery.lost_item_id == LostItem.id)
+    q = (
+        db.query(Recovery)
+        .outerjoin(LostItem, Recovery.lost_item_id == LostItem.id)
+        .outerjoin(FoundItem, Recovery.found_item_id == FoundItem.id)
+    )
 
     if campus_scope and campus_scope.strip() and campus_scope.strip().upper() != "ALL":
-        q = q.filter(LostItem.campus == campus_scope.strip())
+        q = q.filter(or_(LostItem.campus == campus_scope.strip(), FoundItem.campus == campus_scope.strip()))
 
     if status_filter and status_filter.strip() and status_filter.strip().upper() != "ALL":
         q = q.filter(Recovery.status == status_filter.strip().upper())
+
+    if review_status_filter and review_status_filter.strip() and review_status_filter.strip().upper() != "ALL":
+        q = q.filter(Recovery.review_status == review_status_filter.strip().upper())
 
     total = q.count()
     recs = q.order_by(desc(Recovery.created_at)).offset((page - 1) * limit).limit(limit).all()
@@ -787,8 +818,8 @@ def get_admin_recoveries(
                 id=r.id,
                 claim_id=r.claim_id,
                 lost_item_id=r.lost_item_id,
-                lost_item_title=r.lost_item.title if r.lost_item else "Lost Item",
-                found_item_id=r.found_item_id,
+                lost_item_title=r.lost_item.title if r.lost_item else "Direct Recovery (No Lost Report)",
+                found_item_id=r.found_item_id or 0,
                 found_item_title=r.found_item.title if r.found_item else "Found Item",
                 claimant_id=r.claimant_id,
                 claimant_name=r.claimant.full_name if r.claimant else "Claimant",
@@ -800,6 +831,11 @@ def get_admin_recoveries(
                 returned_at=r.returned_at,
                 confirmed_at=r.confirmed_at,
                 created_at=r.created_at,
+                review_status=r.review_status or "NOT_REQUIRED",
+                review_reason=r.review_reason,
+                handover_method=r.handover_method or "DIRECT",
+                dispute_reason=r.dispute_reason,
+                disputed_by_name=r.disputer.full_name if r.disputer else None,
             )
         )
 

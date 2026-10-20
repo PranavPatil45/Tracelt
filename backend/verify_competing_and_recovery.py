@@ -18,7 +18,7 @@ from app.models.recovery import Recovery
 
 client = TestClient(app)
 
-def create_user_token(email: str, name: str, campus: str = "Downtown"):
+def create_user_token(email: str, name: str, campus: str = "Downtown", role: str = "user"):
     password = "SecurePassword123!"
     reg_res = client.post("/api/register", json={
         "email": email,
@@ -29,6 +29,15 @@ def create_user_token(email: str, name: str, campus: str = "Downtown"):
     assert reg_res.status_code == 201, f"Register failed: {reg_res.text}"
     token = reg_res.json()["access_token"]
     user_info = reg_res.json()["user"]
+    if role != "user":
+        db = SessionLocal()
+        u = db.query(User).filter(User.id == user_info["id"]).first()
+        if u:
+            u.role = role
+            db.commit()
+            db.refresh(u)
+            user_info["role"] = role
+        db.close()
     return {"headers": {"Authorization": f"Bearer {token}"}, "user": user_info}
 
 def run_tests():
@@ -184,19 +193,43 @@ def run_tests():
     assert claim_alice_res.status_code == 201
     c_alice_id = claim_alice_res.json()["id"]
 
-    # Charlie submits competing Claim 2 (direct claim) on the same found item
+    # Charlie submits competing Claim 2 (direct claim) on the same found item -> Blocked by Rule 1.1
     claim_charlie_res = client.post(f"/api/found-items/{f2_id}/claim", json={
         "verification_details": "Lost my hydro flask yesterday with black strap.",
     }, headers=charlie["headers"])
-    assert claim_charlie_res.status_code == 201
-    c_charlie_id = claim_charlie_res.json()["id"]
-    print(f"[PASS] 12. Multiple competing claims submitted on FoundItem #{f2_id} (Claim #{c_alice_id} and #{c_charlie_id})")
+    assert claim_charlie_res.status_code == 409
+    print(f"[PASS] 12a. Rule 1.1 enforced: Second active claim blocked while Claim #{c_alice_id} is active (409 Conflict)")
 
-    # Bob approves Alice's claim
-    appr_alice = client.put(f"/api/claims/{c_alice_id}/review", json={
+    # Simulate legacy/exceptional competing claim directly in DB (Rule 1.2)
+    db = SessionLocal()
+    charlie_claim = Claim(
+        found_item_id=f2_id,
+        claimant_id=charlie["user"]["id"],
+        verification_details="Lost my hydro flask yesterday with black strap.",
+        status="PENDING",
+    )
+    db.add(charlie_claim)
+    db.commit()
+    db.refresh(charlie_claim)
+    c_charlie_id = charlie_claim.id
+    db.close()
+    print(f"[PASS] 12b. Exceptional competing claims present on FoundItem #{f2_id} (Claim #{c_alice_id} and #{c_charlie_id})")
+
+    # Finder Bob attempts to approve Alice's claim directly -> Blocked because competing claims require Reviewer intervention
+    fail_finder_appr = client.put(f"/api/claims/{c_alice_id}/review", json={
         "action": "APPROVE",
         "reviewer_notes": "Scratch matches description perfectly.",
     }, headers=bob["headers"])
+    assert fail_finder_appr.status_code == 400
+    assert "Mandatory Reviewer intervention is required" in fail_finder_appr.json()["detail"]
+    print("[PASS] 12c. Finder blocked from approving when competing claims exist (400 Bad Request)")
+
+    # Authorized Staff Reviewer resolves competing claims by approving Alice's claim
+    staff_reviewer = create_user_token(f"staff_comp_{uid}@example.com", "Staff Reviewer", role="reviewer")
+    appr_alice = client.put(f"/api/claims/{c_alice_id}/review", json={
+        "action": "APPROVE",
+        "reviewer_notes": "Scratch matches description perfectly. Reviewer approved.",
+    }, headers=staff_reviewer["headers"])
     assert appr_alice.status_code == 200
     assert appr_alice.json()["status"] == "APPROVED"
 

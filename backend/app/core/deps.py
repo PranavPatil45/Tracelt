@@ -54,13 +54,32 @@ def require_admin(
     current_user: User = Depends(get_current_user),
 ) -> User:
     """
-    Authorization dependency ensuring that the caller is an authenticated administrator.
-    Returns HTTP 403 Forbidden if the user lacks administrative privileges.
+    Authorization dependency ensuring that the caller is an authenticated administrator or reviewer.
+    Returns HTTP 403 Forbidden if the user lacks administrative/reviewer privileges.
+    """
+    user_role = (current_user.role or "").strip().lower()
+    if user_role not in ("admin", "superadmin", "administrator", "reviewer"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access the Admin/Reviewer portal.",
+        )
+    return current_user
+
+
+require_reviewer_or_admin = require_admin
+
+
+def require_admin_strict(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """
+    Authorization dependency ensuring that the caller is a system administrator.
+    Excludes standard reviewers from purely administrative operations (such as reviewer assignment).
     """
     user_role = (current_user.role or "").strip().lower()
     if user_role not in ("admin", "superadmin", "administrator"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access the Admin Dashboard.",
+            detail="Administrative privileges required. Reviewers cannot perform this action.",
         )
     return current_user

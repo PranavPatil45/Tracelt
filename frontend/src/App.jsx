@@ -32,6 +32,15 @@ import AdminClaims from "./pages/admin/AdminClaims.jsx";
 import AdminRecoveries from "./pages/admin/AdminRecoveries.jsx";
 import AdminReports from "./pages/admin/AdminReports.jsx";
 import AdminSettings from "./pages/admin/AdminSettings.jsx";
+import AdminAssignments from "./pages/admin/AdminAssignments.jsx";
+
+// Reviewer Portal
+import ReviewerProtectedRoute from "./components/reviewer/ReviewerProtectedRoute.jsx";
+import ReviewerLayout from "./components/reviewer/ReviewerLayout.jsx";
+import ReviewerDashboard from "./pages/reviewer/ReviewerDashboard.jsx";
+import ReviewerCases from "./pages/reviewer/ReviewerCases.jsx";
+import ReviewerCaseDetail from "./pages/reviewer/ReviewerCaseDetail.jsx";
+
 
 export default function App() {
   return (
@@ -63,6 +72,20 @@ export default function App() {
           <Route path="/profile" element={<DashboardPage />} />
           <Route path="/settings" element={<DashboardPage />} />
 
+                    {/* Reviewer Workspace Portal */}
+          <Route
+            path="/reviewer"
+            element={
+              <ReviewerProtectedRoute>
+                <ReviewerLayout />
+              </ReviewerProtectedRoute>
+            }
+          >
+            <Route index element={<ReviewerDashboard />} />
+            <Route path="cases" element={<ReviewerCases />} />
+            <Route path="cases/:caseType/:caseId" element={<ReviewerCaseDetail />} />
+          </Route>
+
           {/* Admin Management Portal */}
           <Route
             path="/admin"
@@ -78,6 +101,7 @@ export default function App() {
             <Route path="found-items" element={<AdminFoundItems />} />
             <Route path="matches" element={<AdminMatches />} />
             <Route path="claims" element={<AdminClaims />} />
+            <Route path="assignments" element={<AdminAssignments />} />
             <Route path="recoveries" element={<AdminRecoveries />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="settings" element={<AdminSettings />} />

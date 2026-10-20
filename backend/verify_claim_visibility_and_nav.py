@@ -87,27 +87,29 @@ def test_claim_visibility_and_navigation_backend():
 
     # Find or create a lost item whose ID does not exist in found_items
     db = SessionLocal()
-    found_ids = {f.id for f in db.query(FoundItem.id).all()}
+    from sqlalchemy import func
+    found_ids = {f[0] for f in db.query(FoundItem.id).all()}
     target_lost_id = None
-    if lost_item_id not in found_ids:
-        target_lost_id = lost_item_id
+    candidate = db.query(LostItem).filter(~LostItem.id.in_(found_ids)).first() if found_ids else None
+    if candidate:
+        target_lost_id = candidate.id
     else:
-        for _ in range(40):
-            li = LostItem(
-                user_id=alice_id,
-                title="Extra Lost",
-                category="Other",
-                description="Sample lost item description for test",
-                location="Campus",
-                lost_date="2026-10-18",
-                status="ACTIVE"
-            )
-            db.add(li)
-            db.commit()
-            db.refresh(li)
-            if li.id not in found_ids:
-                target_lost_id = li.id
-                break
+        max_found = max(found_ids) if found_ids else 0
+        max_lost = db.query(func.max(LostItem.id)).scalar() or 0
+        next_id = max(max_found, max_lost) + 10
+        li = LostItem(
+            id=next_id,
+            user_id=alice_id,
+            title="Extra Lost",
+            category="Other",
+            description="Sample lost item description for test",
+            location="Campus",
+            lost_date="2026-10-18",
+            status="ACTIVE",
+        )
+        db.add(li)
+        db.commit()
+        target_lost_id = li.id
     db.close()
 
     # Via POST /api/found-items/{target_lost_id}/claim (passing a lost_item_id where found_item_id is expected)

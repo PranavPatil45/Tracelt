@@ -18,6 +18,7 @@ export default function ClaimActionModal({
 
   const [verificationDetails, setVerificationDetails] = useState('')
   const [additionalMessage, setAdditionalMessage] = useState('')
+  const [requestOtp, setRequestOtp] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submittedClaim, setSubmittedClaim] = useState(null)
   const [error, setError] = useState('')
@@ -77,6 +78,7 @@ export default function ClaimActionModal({
       const payload = {
         verification_details: trimmedProof,
         additional_message: additionalMessage.trim() || undefined,
+        preferred_handover_method: requestOtp ? 'OTP' : 'DIRECT',
       }
       let newClaim
       if (effectiveMatchId) {
@@ -222,6 +224,26 @@ export default function ClaimActionModal({
               <div className={`claim-char-count ${verificationDetails.trim().length >= 10 ? 'claim-char-count--valid' : ''}`}>
                 {verificationDetails.length}/1000 (min. 10 chars)
               </div>
+            </div>
+
+            <div className="form-group" style={{ margin: '14px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', padding: '10px 12px', borderRadius: '8px', background: 'rgba(69, 214, 224, 0.05)', border: '1px solid rgba(69, 214, 224, 0.2)' }}>
+                <input
+                  type="checkbox"
+                  checked={requestOtp}
+                  onChange={(e) => setRequestOtp(e.target.checked)}
+                  disabled={submitting}
+                  style={{ marginTop: '3px', cursor: 'pointer' }}
+                />
+                <div>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Request 6-digit OTP Handover Verification
+                  </span>
+                  <p style={{ margin: '3px 0 0 0', fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    Recommended for high-value or sensitive items. A single-use 6-digit code will be required during in-person physical exchange.
+                  </p>
+                </div>
+              </label>
             </div>
 
             <div className="form-group">

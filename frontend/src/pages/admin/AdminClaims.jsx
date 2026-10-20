@@ -13,6 +13,7 @@ export default function AdminClaims() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [reviewStatusFilter, setReviewStatusFilter] = useState('ALL')
 
   // Claim Review Modal
   const [inspectClaim, setInspectClaim] = useState(null)
@@ -25,6 +26,7 @@ export default function AdminClaims() {
     try {
       const res = await fetchAdminClaims(token, {
         status: statusFilter,
+        review_status: reviewStatusFilter !== 'ALL' ? reviewStatusFilter : undefined,
         campus: currentAdmin?.campus,
         page,
         limit: 15,
@@ -36,7 +38,7 @@ export default function AdminClaims() {
     } finally {
       setLoading(false)
     }
-  }, [token, statusFilter, page, currentAdmin?.campus])
+  }, [token, statusFilter, reviewStatusFilter, page, currentAdmin?.campus])
 
   useEffect(() => {
     loadClaims()
@@ -104,6 +106,39 @@ export default function AdminClaims() {
       },
     },
     {
+      key: 'review_workflow',
+      label: 'Review Workflow',
+      render: (c) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          {c.is_competing && (
+            <span className="admin-badge admin-badge--closed" style={{ background: '#f43f5e', color: '#fff', fontSize: '0.72rem' }}>
+              COMPETING CLAIMS
+            </span>
+          )}
+          {c.review_status === 'PENDING' && (
+            <span className="admin-badge admin-badge--pending" style={{ fontSize: '0.72rem' }}>
+              REVIEW: {c.review_reason || 'PENDING'}
+            </span>
+          )}
+          {c.review_status === 'DISPUTED' && (
+            <span className="admin-badge admin-badge--closed" style={{ fontSize: '0.72rem' }}>
+              DISPUTED
+            </span>
+          )}
+          {c.review_status === 'APPROVED' && (
+            <span className="admin-badge admin-badge--active" style={{ fontSize: '0.72rem' }}>
+              STAFF APPROVED
+            </span>
+          )}
+          {(!c.review_status || c.review_status === 'NOT_REQUIRED') && !c.is_competing && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Routine ({c.handover_method || 'DIRECT'})
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
       key: 'created_at',
       label: 'Submitted At',
       render: (c) => (
@@ -139,7 +174,7 @@ export default function AdminClaims() {
 
       {/* Toolbar */}
       <div className="admin-toolbar">
-        <div className="admin-filter-group">
+        <div className="admin-filter-group" style={{ display: 'flex', gap: '10px' }}>
           <select
             value={statusFilter}
             onChange={(e) => {
@@ -154,6 +189,21 @@ export default function AdminClaims() {
             <option value="APPROVED">Approved</option>
             <option value="REJECTED">Rejected</option>
             <option value="CANCELLED">Cancelled</option>
+          </select>
+
+          <select
+            value={reviewStatusFilter}
+            onChange={(e) => {
+              setReviewStatusFilter(e.target.value)
+              setPage(1)
+            }}
+            className="admin-select"
+          >
+            <option value="ALL">All Review Queues</option>
+            <option value="PENDING">Staff Review Pending</option>
+            <option value="DISPUTED">Disputed Claims</option>
+            <option value="APPROVED">Staff Approved</option>
+            <option value="NOT_REQUIRED">Routine Handover</option>
           </select>
         </div>
       </div>
@@ -274,6 +324,34 @@ export default function AdminClaims() {
                 )}
               </div>
 
+              {/* Competing Claims Warning */}
+              {inspectClaim.is_competing && (
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#ef4444',
+                  padding: '0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '0.85rem',
+                }}>
+                  <strong>Competing Claims Detected:</strong> Multiple active claims exist for Found Item #{inspectClaim.found_item_id}. As a staff reviewer, approving this claim will resolve the item and reject all competing claims.
+                </div>
+              )}
+
+              {/* Conflict of Interest Warning */}
+              {currentAdmin && (currentAdmin.id === inspectClaim.claimant_id || currentAdmin.id === inspectClaim.finder_id) && (
+                <div style={{
+                  background: 'rgba(234, 179, 8, 0.12)',
+                  border: '1px solid rgba(234, 179, 8, 0.35)',
+                  color: '#eab308',
+                  padding: '0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '0.85rem',
+                }}>
+                  <strong>Conflict of Interest Prevention:</strong> You are recorded as a participant (claimant or finder) in this item/claim. Another reviewer or administrator must process this decision.
+                </div>
+              )}
+
               {/* Reviewer notes / history */}
               {inspectClaim.status === 'APPROVED' || inspectClaim.status === 'REJECTED' ? (
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
@@ -323,7 +401,7 @@ export default function AdminClaims() {
                     type="button"
                     onClick={() => handleExecuteReview('REJECT')}
                     className="admin-btn admin-btn-danger"
-                    disabled={processing}
+                    disabled={processing || (currentAdmin && (currentAdmin.id === inspectClaim.claimant_id || currentAdmin.id === inspectClaim.finder_id))}
                   >
                     {processing ? <Loader2 size={15} className="animate-spin" /> : <><XCircle size={15} /> Reject Claim</>}
                   </button>
@@ -332,7 +410,7 @@ export default function AdminClaims() {
                     type="button"
                     onClick={() => handleExecuteReview('APPROVE')}
                     className="admin-btn admin-btn-success"
-                    disabled={processing}
+                    disabled={processing || (currentAdmin && (currentAdmin.id === inspectClaim.claimant_id || currentAdmin.id === inspectClaim.finder_id))}
                   >
                     {processing ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> Approve Claim</>}
                   </button>

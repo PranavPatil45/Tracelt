@@ -180,3 +180,130 @@ export async function getHistoryStats(token) {
     throw new RecoveryApiError('Unable to connect to history service.', 0)
   }
 }
+
+/**
+ * Generate 6-digit handover OTP (Claimant action).
+ *
+ * @param {number|string} recoveryId
+ * @param {string} token
+ * @returns {Promise<{otp: string, expires_at: string, expires_in_seconds: number, attempts_remaining: number}>}
+ */
+/**
+ * Request OTP verification for a recovery (Claimant or Finder action).
+ * Upgrades handover method from DIRECT to OTP.
+ *
+ * @param {number|string} recoveryId
+ * @param {string} token
+ * @returns {Promise<object>} Updated recovery record
+ */
+export async function requestRecoveryOtp(recoveryId, token) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/recoveries/${recoveryId}/request-otp`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    return await handleResponse(response, 'Failed to request OTP verification for this recovery.')
+  } catch (err) {
+    if (err instanceof RecoveryApiError) throw err
+    throw new RecoveryApiError('Unable to connect to recovery service.', 0)
+  }
+}
+
+export async function generateRecoveryOtp(recoveryId, token) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/recoveries/${recoveryId}/otp/generate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    return await handleResponse(response, 'Failed to generate handover OTP.')
+  } catch (err) {
+    if (err instanceof RecoveryApiError) throw err
+    throw new RecoveryApiError('Unable to connect to recovery service.', 0)
+  }
+}
+
+/**
+ * Verify handover OTP (Finder action).
+ *
+ * @param {number|string} recoveryId
+ * @param {object} payload
+ * @param {string} payload.otp
+ * @param {string} payload.return_location
+ * @param {string} [payload.return_notes]
+ * @param {string} token
+ * @returns {Promise<object>}
+ */
+export async function verifyRecoveryOtp(recoveryId, payload, token) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/recoveries/${recoveryId}/verify-otp`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+    return await handleResponse(response, 'Failed to verify handover OTP.')
+  } catch (err) {
+    if (err instanceof RecoveryApiError) throw err
+    throw new RecoveryApiError('Unable to connect to recovery service.', 0)
+  }
+}
+
+/**
+ * Raise a dispute on recovery.
+ *
+ * @param {number|string} recoveryId
+ * @param {object} payload
+ * @param {string} payload.reason
+ * @param {string} token
+ * @returns {Promise<object>}
+ */
+export async function disputeRecovery(recoveryId, payload, token) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/recoveries/${recoveryId}/dispute`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+    return await handleResponse(response, 'Failed to raise recovery dispute.')
+  } catch (err) {
+    if (err instanceof RecoveryApiError) throw err
+    throw new RecoveryApiError('Unable to connect to recovery service.', 0)
+  }
+}
+
+/**
+ * Staff reviewer resolves a recovery dispute.
+ *
+ * @param {number|string} recoveryId
+ * @param {object} payload
+ * @param {'APPROVE'|'REJECT'} payload.decision
+ * @param {string} [payload.notes]
+ * @param {string} token
+ * @returns {Promise<object>}
+ */
+export async function resolveRecoveryDispute(recoveryId, payload, token) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/recoveries/${recoveryId}/resolve-dispute`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+    return await handleResponse(response, 'Failed to resolve recovery dispute.')
+  } catch (err) {
+    if (err instanceof RecoveryApiError) throw err
+    throw new RecoveryApiError('Unable to connect to recovery service.', 0)
+  }
+}
+

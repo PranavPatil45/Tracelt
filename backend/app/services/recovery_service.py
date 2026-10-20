@@ -1,4 +1,6 @@
-from datetime import datetime, timezone
+import secrets
+import hashlib
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, joinedload
@@ -14,7 +16,21 @@ from app.models.recovery import Recovery
 from app.services.notification_service import (
     notify_item_returned,
     notify_recovery_confirmed,
+    notify_handover_otp_verified,
+    notify_dispute_raised,
+    notify_dispute_resolved,
 )
+
+
+def _is_otp_expired(otp_expires_at: Optional[datetime]) -> bool:
+    """Timezone-safe comparison for OTP expiration against SQLite stored datetimes."""
+    if not otp_expires_at:
+        return True
+    now = datetime.now(timezone.utc)
+    exp = otp_expires_at
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    return now > exp
 
 
 def create_recovery_for_claim(
@@ -24,6 +40,7 @@ def create_recovery_for_claim(
 ) -> Recovery:
     """
     Creates a new Recovery tracking record for an approved claim.
+    Inherits hybrid workflow parameters, review decisions, and handover method.
     If a recovery already exists for this claim, returns it idempotently.
     """
     existing = db.query(Recovery).filter(Recovery.claim_id == claim.id).first()
@@ -51,6 +68,14 @@ def create_recovery_for_claim(
         claimant_id=claim.claimant_id,
         finder_id=finder_id,
         status="RETURN_PENDING",
+        review_status=claim.review_status or "NOT_REQUIRED",
+        review_reason=claim.review_reason,
+        review_decision_notes=claim.review_decision_notes,
+        review_decision_by=claim.review_decision_by,
+        review_decision_at=claim.review_decision_at,
+        handover_method=claim.handover_method or "DIRECT",
+        is_mandatory_review=bool(claim.is_mandatory_review),
+        is_mandatory_otp=bool(claim.is_mandatory_otp),
     )
     db.add(recovery)
     if commit:
@@ -97,7 +122,7 @@ def get_recovery_for_claim(db: Session, claim_id: int) -> Optional[Recovery]:
 
 
 def build_timeline_steps(recovery: Recovery) -> List[Dict[str, Any]]:
-    """Constructs the visual 6-stage lifecycle timeline for the recovery flow."""
+    """Constructs the visual lifecycle timeline for the recovery flow."""
     rec_status = (recovery.status or "").upper()
     match_time = recovery.match.created_at if recovery.match else recovery.created_at
     claim_sub_time = recovery.claim.created_at if recovery.claim else recovery.created_at
@@ -128,21 +153,33 @@ def build_timeline_steps(recovery: Recovery) -> List[Dict[str, Any]]:
         },
         {
             "key": "claim_approved",
-            "title": "Claim Approved",
+            "title": "Claim Approved" if recovery.review_status != "APPROVED" else "Reviewer Approved",
             "status": "completed",
             "timestamp": claim_appr_time,
-            "description": "Finder reviewed and accepted ownership verification.",
+            "description": (
+                "Staff Reviewer authorized ownership and recovery."
+                if recovery.review_status == "APPROVED"
+                else "Ownership verification reviewed and accepted."
+            ),
         },
         {
             "key": "return_pending",
-            "title": "Return Coordination",
+            "title": "Dispute Under Review" if recovery.review_status == "DISPUTED" else "Return Coordination",
             "status": "completed" if rec_status in ("RETURNED", "RECOVERED") else "current",
             "timestamp": recovery.created_at,
-            "description": "Participants coordinate physical handover through messaging.",
+            "description": (
+                f"Dispute raised: {recovery.dispute_reason or 'Under staff review.'}"
+                if recovery.review_status == "DISPUTED"
+                else (
+                    "Claimant generates handover OTP for finder verification."
+                    if recovery.handover_method == "OTP"
+                    else "Participants coordinate physical handover through messaging."
+                )
+            ),
         },
         {
             "key": "item_returned",
-            "title": "Item Handed Over",
+            "title": "Handover Verified" if recovery.handover_method == "OTP" else "Item Handed Over",
             "status": (
                 "completed"
                 if rec_status == "RECOVERED"
@@ -150,9 +187,13 @@ def build_timeline_steps(recovery: Recovery) -> List[Dict[str, Any]]:
             ),
             "timestamp": recovery.returned_at,
             "description": (
-                f"Finder marked item returned at {recovery.return_location}."
-                if recovery.return_location
-                else "Finder marks item as physically handed over."
+                f"Finder verified OTP at {recovery.return_location or 'campus meeting point'}."
+                if (recovery.handover_method == "OTP" and recovery.returned_at)
+                else (
+                    f"Finder marked item returned at {recovery.return_location}."
+                    if recovery.return_location
+                    else "Finder marks item as physically handed over."
+                )
             ),
         },
         {
@@ -168,7 +209,7 @@ def build_timeline_steps(recovery: Recovery) -> List[Dict[str, Any]]:
 
 
 def format_recovery_response(recovery: Recovery, current_user: User, db: Session) -> Dict[str, Any]:
-    """Formats full recovery object with permissions and contextual data."""
+    """Formats full recovery object with permissions, OTP capabilities, and contextual data."""
     lost = recovery.lost_item
     found = recovery.found_item
     claimant = recovery.claimant
@@ -180,8 +221,56 @@ def format_recovery_response(recovery: Recovery, current_user: User, db: Session
 
     # Role-based action permissions
     rec_status = (recovery.status or "").upper()
-    can_mark_returned = current_user.id == recovery.finder_id and rec_status == "RETURN_PENDING"
-    can_confirm_recovery = current_user.id == recovery.claimant_id and rec_status == "RETURNED"
+    rev_status = (recovery.review_status or "NOT_REQUIRED").upper()
+
+    is_blocked_by_review = rev_status in ("PENDING", "DISPUTED", "REJECTED")
+    is_otp = (recovery.handover_method or "").upper() == "OTP"
+
+    can_mark_returned = (
+        current_user.id == recovery.finder_id
+        and rec_status == "RETURN_PENDING"
+        and not is_blocked_by_review
+        and not is_otp
+    )
+    can_confirm_recovery = (
+        current_user.id == recovery.claimant_id
+        and rec_status == "RETURNED"
+        and not is_blocked_by_review
+        and (not is_otp or recovery.otp_verified_at is not None)
+    )
+
+    can_raise_dispute = (
+        current_user.id in (recovery.claimant_id, recovery.finder_id)
+        and rec_status not in ("RECOVERED", "CANCELLED")
+        and rev_status != "DISPUTED"
+    )
+
+    can_generate_otp = (
+        current_user.id == recovery.claimant_id
+        and rec_status == "RETURN_PENDING"
+        and not is_blocked_by_review
+        and is_otp
+    )
+
+    has_active_otp = bool(
+        recovery.otp_hash
+        and recovery.otp_expires_at
+        and not _is_otp_expired(recovery.otp_expires_at)
+    )
+
+    can_verify_otp = (
+        current_user.id == recovery.finder_id
+        and rec_status == "RETURN_PENDING"
+        and not is_blocked_by_review
+        and is_otp
+    )
+
+    can_request_otp = (
+        current_user.id in (recovery.claimant_id, recovery.finder_id)
+        and rec_status == "RETURN_PENDING"
+        and not is_blocked_by_review
+        and not is_otp
+    )
 
     lost_summary = {
         "id": lost.id,
@@ -225,6 +314,8 @@ def format_recovery_response(recovery: Recovery, current_user: User, db: Session
         "id": recovery.id,
         "claim_id": recovery.claim_id,
         "match_id": recovery.match_id,
+        "claimant_id": recovery.claimant_id,
+        "finder_id": recovery.finder_id,
         "status": recovery.status,
         "return_location": recovery.return_location,
         "return_notes": recovery.return_notes,
@@ -240,7 +331,273 @@ def format_recovery_response(recovery: Recovery, current_user: User, db: Session
         "can_mark_returned": can_mark_returned,
         "can_confirm_recovery": can_confirm_recovery,
         "timeline": build_timeline_steps(recovery),
+        # Hybrid Reviewer Workflow fields
+        "review_status": recovery.review_status or "NOT_REQUIRED",
+        "review_reason": recovery.review_reason,
+        "review_decision_notes": recovery.review_decision_notes,
+        "review_decision_by": recovery.review_decision_by,
+        "review_decision_at": recovery.review_decision_at,
+        "handover_method": recovery.handover_method or "DIRECT",
+        "is_mandatory_review": bool(recovery.is_mandatory_review),
+        "is_mandatory_otp": bool(recovery.is_mandatory_otp),
+        "has_active_otp": has_active_otp,
+        "otp_attempts_left": max(0, 5 - (recovery.otp_attempts or 0)),
+        "otp_expires_at": recovery.otp_expires_at,
+        "otp_verified_at": recovery.otp_verified_at,
+        "dispute_reason": recovery.dispute_reason,
+        "disputed_by": recovery.disputed_by,
+        "disputed_at": recovery.disputed_at,
+        "can_raise_dispute": can_raise_dispute,
+        "can_generate_otp": can_generate_otp,
+        "can_verify_otp": can_verify_otp,
+        "can_request_otp": can_request_otp,
     }
+
+
+def generate_handover_otp(
+    db: Session,
+    recovery_id: int,
+    current_user: User,
+) -> Dict[str, Any]:
+    """
+    Claimant generates a single-use 6-digit handover OTP.
+    Plaintext OTP is returned ONLY in this response and is NEVER persisted directly.
+    A salted SHA-256 hash is stored in the database with a 30-minute expiration.
+    """
+    recovery = get_recovery_by_id(db, recovery_id=recovery_id)
+    if not recovery:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recovery record not found.",
+        )
+
+    if current_user.id != recovery.claimant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the verified claimant can generate a handover verification code.",
+        )
+
+    if (recovery.handover_method or "").upper() != "OTP":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP generation is only available for recoveries using OTP handover mode.",
+        )
+
+    rec_status = (recovery.status or "").upper()
+    if rec_status != "RETURN_PENDING":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot generate OTP while recovery is in '{recovery.status}' status.",
+        )
+
+    rev_status = (recovery.review_status or "NOT_REQUIRED").upper()
+    if rev_status in ("PENDING", "DISPUTED", "REJECTED"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot generate OTP while recovery is in '{recovery.review_status}' status. Resolution required first.",
+        )
+
+    # Cryptographically secure 6-digit OTP
+    otp_code = f"{secrets.randbelow(1000000):06d}"
+    salt = secrets.token_hex(16)
+    otp_hash = hashlib.sha256(f"{salt}:{otp_code}".encode("utf-8")).hexdigest()
+
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(minutes=30)
+
+    recovery.otp_hash = otp_hash
+    recovery.otp_salt = salt
+    recovery.otp_expires_at = expires_at
+    recovery.otp_attempts = 0
+    recovery.updated_at = now
+
+    db.commit()
+    db.refresh(recovery)
+
+    from app.services.notification_service import notify_otp_generated
+    notify_otp_generated(db, recovery=recovery)
+
+    return {
+        "otp": otp_code,
+        "expires_at": expires_at,
+        "expires_in_seconds": 1800,
+        "is_active": True,
+        "attempts_remaining": 5,
+    }
+
+
+def request_handover_otp(
+    db: Session,
+    recovery_id: int,
+    current_user: User,
+) -> Recovery:
+    """
+    Either Claimant or Finder requests OTP verification for an active recovery.
+    Upgrades handover_method from DIRECT to OTP.
+    Once requested, handover_method cannot be downgraded back to DIRECT.
+    """
+    recovery = get_recovery_by_id(db, recovery_id=recovery_id)
+    if not recovery:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recovery record not found.",
+        )
+
+    reviewer_role = getattr(current_user, "role", "").strip().lower()
+    is_staff = reviewer_role in ("admin", "superadmin", "administrator", "reviewer")
+    if current_user.id not in (recovery.claimant_id, recovery.finder_id) and not is_staff:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the claimant or finder involved in this recovery may request OTP verification.",
+        )
+
+    rec_status = (recovery.status or "").upper()
+    if rec_status != "RETURN_PENDING":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot change handover method while recovery is in '{recovery.status}' status.",
+        )
+
+    rev_status = (recovery.review_status or "NOT_REQUIRED").upper()
+    if rev_status in ("PENDING", "DISPUTED", "REJECTED"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot change handover method while recovery is in '{recovery.review_status}' status. Resolution required first.",
+        )
+
+    # Idempotent if already OTP
+    if (recovery.handover_method or "").upper() == "OTP":
+        return recovery
+
+    now = datetime.now(timezone.utc)
+    recovery.handover_method = "OTP"
+    recovery.updated_at = now
+
+    if recovery.claim:
+        recovery.claim.handover_method = "OTP"
+        recovery.claim.updated_at = now
+
+    db.commit()
+    db.refresh(recovery)
+
+    from app.services.notification_service import notify_otp_requested
+    notify_otp_requested(db, recovery=recovery, requested_by=current_user)
+
+    return recovery
+
+
+
+def verify_handover_otp(
+    db: Session,
+    recovery_id: int,
+    current_user: User,
+    otp: str,
+    return_location: str,
+    return_notes: Optional[str] = None,
+) -> Recovery:
+    """
+    Finder verifies the claimant's OTP at physical handover.
+    Transitions status to RETURNED. (Claimant still must confirm recovery).
+    """
+    recovery = get_recovery_by_id(db, recovery_id=recovery_id)
+    if not recovery:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recovery record not found.",
+        )
+
+    if current_user.id != recovery.finder_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the finder who found this item is authorized to verify the handover OTP.",
+        )
+
+    if (recovery.handover_method or "").upper() != "OTP":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP verification is only available for recoveries using OTP handover mode.",
+        )
+
+    rec_status = (recovery.status or "").upper()
+    if rec_status in ("RETURNED", "RECOVERED"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"This recovery is already {rec_status.lower()} and cannot be verified again.",
+        )
+
+    if rec_status != "RETURN_PENDING":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot verify handover from status '{recovery.status}'.",
+        )
+
+    rev_status = (recovery.review_status or "NOT_REQUIRED").upper()
+    if rev_status in ("PENDING", "DISPUTED", "REJECTED"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot verify handover while recovery is in '{recovery.review_status}' status.",
+        )
+
+    if not recovery.otp_hash or not recovery.otp_salt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No active OTP found. Claimant must generate a handover OTP first.",
+        )
+
+    if (recovery.otp_attempts or 0) >= 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Maximum OTP verification attempts exceeded. Claimant must generate a new OTP.",
+        )
+
+    if recovery.otp_expires_at and _is_otp_expired(recovery.otp_expires_at):
+        from app.services.notification_service import notify_otp_expired
+        notify_otp_expired(db, recovery=recovery)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP has expired. Claimant must generate a new OTP.",
+        )
+
+    now = datetime.now(timezone.utc)
+    clean_otp = (otp or "").strip()
+    check_hash = hashlib.sha256(f"{recovery.otp_salt}:{clean_otp}".encode("utf-8")).hexdigest()
+
+    if check_hash != recovery.otp_hash:
+        recovery.otp_attempts = (recovery.otp_attempts or 0) + 1
+        recovery.updated_at = now
+        db.commit()
+        db.refresh(recovery)
+        remaining = max(0, 5 - recovery.otp_attempts)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid OTP code. {remaining} attempt(s) remaining.",
+        )
+
+    # Valid OTP verified: mark RETURNED (not RECOVERED)
+    clean_location = return_location.strip()
+    clean_notes = return_notes.strip() if return_notes else None
+
+    recovery.status = "RETURNED"
+    recovery.return_location = clean_location
+    recovery.return_notes = clean_notes
+    recovery.returned_at = now
+    recovery.otp_verified_at = now
+    recovery.otp_hash = None  # Single-use: clear hash
+    recovery.otp_salt = None
+    recovery.updated_at = now
+
+    if recovery.found_item:
+        recovery.found_item.status = "RETURNED"
+    if recovery.lost_item:
+        recovery.lost_item.status = "RETURNED"
+
+    db.commit()
+    db.refresh(recovery)
+
+    notify_handover_otp_verified(db, recovery)
+    notify_item_returned(db, recovery, commit=True)
+
+    return recovery
 
 
 def mark_item_returned(
@@ -251,7 +608,7 @@ def mark_item_returned(
     return_notes: Optional[str] = None,
 ) -> Recovery:
     """
-    Finder marks the item as physically handed over.
+    Finder marks the item as physically handed over via direct confirmation.
     Transitions status from RETURN_PENDING -> RETURNED.
     """
     recovery = get_recovery_by_id(db, recovery_id=recovery_id)
@@ -266,6 +623,21 @@ def mark_item_returned(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the finder who found this item is authorized to mark it as returned.",
+        )
+
+    # OTP mode check: Cannot mark returned directly if handover method is OTP
+    if (recovery.handover_method or "").upper() == "OTP":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This recovery requires OTP handover verification. The finder must verify the claimant's OTP code instead of direct return confirmation.",
+        )
+
+    # Review status check
+    rev_status = (recovery.review_status or "NOT_REQUIRED").upper()
+    if rev_status in ("PENDING", "DISPUTED", "REJECTED"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot mark item returned while recovery is in '{recovery.review_status}' status.",
         )
 
     # State validation: Reject invalid transitions
@@ -315,6 +687,11 @@ def confirm_recovery(
     """
     Claimant confirms receipt of their lost item.
     Transitions status from RETURNED -> RECOVERED in a single atomic transaction.
+    Requires:
+    1. Finder marked returned
+    2. Claimant confirmed receipt
+    3. Reviewer approved (or not required)
+    4. No unresolved dispute
     """
     recovery = get_recovery_by_id(db, recovery_id=recovery_id)
     if not recovery:
@@ -330,12 +707,27 @@ def confirm_recovery(
             detail="Only the claimant who lost this item is authorized to confirm recovery.",
         )
 
+    # Review status check: No unresolved dispute or pending review
+    rev_status = (recovery.review_status or "NOT_REQUIRED").upper()
+    if rev_status in ("PENDING", "DISPUTED", "REJECTED"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot confirm recovery while recovery is in '{recovery.review_status}' status. Resolution required first.",
+        )
+
     # State validation
     current_status = (recovery.status or "").upper()
     if current_status == "RECOVERED":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="This item has already been confirmed as recovered.",
+        )
+
+    # Handover OTP verification enforcement: OTP must be verified before confirmation
+    if (recovery.handover_method or "").upper() == "OTP" and not recovery.otp_verified_at:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot confirm recovery: Handover OTP has not been verified.",
         )
 
     if current_status != "RETURNED":
@@ -361,6 +753,148 @@ def confirm_recovery(
 
     # Trigger notification to finder
     notify_recovery_confirmed(db, recovery, commit=True)
+
+    return recovery
+
+
+def raise_recovery_dispute(
+    db: Session,
+    recovery_id: int,
+    current_user: User,
+    reason: str,
+) -> Recovery:
+    """
+    Raises a dispute during the recovery lifecycle.
+    Halts handover and finalization until resolved by a Reviewer.
+    """
+    recovery = get_recovery_by_id(db, recovery_id=recovery_id)
+    if not recovery:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recovery record not found.",
+        )
+
+    # Authorization: Claimant or Finder
+    user_role = getattr(current_user, "role", "").strip().lower()
+    is_staff = user_role in ("admin", "superadmin", "administrator", "reviewer")
+    is_participant = current_user.id in (recovery.claimant_id, recovery.finder_id)
+
+    if not (is_participant or is_staff):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to raise a dispute on this recovery.",
+        )
+
+    if recovery.status in ("RECOVERED", "CANCELLED"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot dispute a recovery that is already {recovery.status.lower()}.",
+        )
+
+    now = datetime.now(timezone.utc)
+    clean_reason = reason.strip()
+
+    recovery.review_status = "DISPUTED"
+    recovery.review_reason = "DISPUTED"
+    recovery.dispute_reason = clean_reason
+    recovery.disputed_by = current_user.id
+    recovery.disputed_at = now
+    recovery.updated_at = now
+
+    if recovery.claim:
+        recovery.claim.review_status = "DISPUTED"
+        recovery.claim.review_reason = "DISPUTED"
+        recovery.claim.reviewer_notes = (recovery.claim.reviewer_notes or "") + f"\nDispute: {clean_reason}"
+
+    db.commit()
+    db.refresh(recovery)
+
+    notify_dispute_raised(db, recovery_or_claim=recovery, reason=clean_reason, disputed_by_name=current_user.full_name)
+
+    return recovery
+
+
+def resolve_recovery_dispute(
+    db: Session,
+    recovery_id: int,
+    reviewer: User,
+    decision: str,
+    notes: Optional[str] = None,
+) -> Recovery:
+    """
+    Staff reviewer resolves a disputed recovery.
+    Decision:
+    - APPROVE: Resolves dispute in favor of claimant, unblocking handover.
+    - REJECT: Cancels recovery and frees up the item for other claims.
+    """
+    recovery = get_recovery_by_id(db, recovery_id=recovery_id)
+    if not recovery:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recovery record not found.",
+        )
+
+    reviewer_role = getattr(reviewer, "role", "").strip().lower()
+    if reviewer_role not in ("admin", "superadmin", "administrator", "reviewer"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only authorized reviewers or administrators can resolve disputes.",
+        )
+
+    # Conflict of interest check (Rule 4)
+    if reviewer.id in (recovery.claimant_id, recovery.finder_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Reviewers cannot resolve disputes on recoveries where they are a participant.",
+        )
+
+    now = datetime.now(timezone.utc)
+    dec_norm = decision.strip().upper()
+
+    if dec_norm in ("APPROVE", "RESOLVE"):
+        recovery.review_status = "APPROVED"
+        recovery.review_decision_notes = notes
+        recovery.review_decision_by = reviewer.id
+        recovery.review_decision_at = now
+        recovery.updated_at = now
+
+        if recovery.claim:
+            recovery.claim.review_status = "APPROVED"
+            recovery.claim.review_decision_notes = notes
+            recovery.claim.review_decision_by = reviewer.id
+            recovery.claim.review_decision_at = now
+
+    elif dec_norm == "REJECT":
+        recovery.review_status = "REJECTED"
+        recovery.status = "CANCELLED"
+        recovery.review_decision_notes = notes
+        recovery.review_decision_by = reviewer.id
+        recovery.review_decision_at = now
+        recovery.updated_at = now
+
+        if recovery.claim:
+            recovery.claim.review_status = "REJECTED"
+            recovery.claim.status = "REJECTED"
+            recovery.claim.review_decision_notes = notes
+            recovery.claim.review_decision_by = reviewer.id
+            recovery.claim.review_decision_at = now
+
+        # Free the found item for subsequent legitimate claims
+        if recovery.found_item:
+            recovery.found_item.status = "AVAILABLE"
+        if recovery.lost_item:
+            recovery.lost_item.status = "ACTIVE"
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid resolution decision. Must be APPROVE or REJECT.",
+        )
+
+    db.commit()
+    db.refresh(recovery)
+
+    notify_dispute_resolved(db, recovery=recovery, decision=dec_norm, notes=notes)
 
     return recovery
 
@@ -549,21 +1083,18 @@ def get_user_history(
 
 def get_history_stats(db: Session, current_user: User) -> Dict[str, int]:
     """Returns statistics for dashboard cards and action badges."""
-    # Count recovered items for user
     recovered_count = (
         db.query(LostItem)
         .filter(LostItem.user_id == current_user.id, LostItem.status == "RECOVERED")
         .count()
     )
 
-    # Count returned items by user
     returned_count = (
         db.query(FoundItem)
         .filter(FoundItem.user_id == current_user.id, FoundItem.status.in_(["RETURNED", "CLAIMED"]))
         .count()
     )
 
-    # Action required count: Claimant has an item with status RETURNED waiting for confirmation
     pending_action_count = (
         db.query(Recovery)
         .filter(Recovery.claimant_id == current_user.id, Recovery.status == "RETURNED")

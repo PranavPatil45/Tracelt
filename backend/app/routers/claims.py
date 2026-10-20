@@ -10,6 +10,7 @@ from app.schemas.claim import (
     ClaimCreate,
     DirectClaimCreate,
     ClaimReview,
+    ClaimDisputeRequest,
     ClaimResponse,
     ClaimListResponse,
     ClaimUserSummary,
@@ -26,6 +27,7 @@ from app.services.claim_service import (
     create_claim,
     create_direct_claim,
     review_claim,
+    raise_claim_dispute,
     cancel_claim,
 )
 
@@ -96,6 +98,14 @@ def _serialize_claim(claim: Claim) -> ClaimResponse:
         lost_item=lost_summary,
         found_item=found_summary,
         match_score=match_score,
+        review_status=claim.review_status or "NOT_REQUIRED",
+        review_reason=claim.review_reason,
+        review_decision_notes=claim.review_decision_notes,
+        review_decision_by=claim.review_decision_by,
+        review_decision_at=claim.review_decision_at,
+        handover_method=claim.handover_method or "DIRECT",
+        is_mandatory_review=bool(claim.is_mandatory_review),
+        is_mandatory_otp=bool(claim.is_mandatory_otp),
     )
 
 
@@ -121,6 +131,7 @@ def submit_match_claim(
         claimant=current_user,
         verification_details=claim_in.verification_details,
         additional_message=claim_in.additional_message,
+        preferred_handover_method=getattr(claim_in, "preferred_handover_method", "DIRECT"),
     )
     return _serialize_claim(claim)
 
@@ -148,6 +159,7 @@ def submit_direct_claim(
         claimant=current_user,
         verification_details=claim_in.verification_details,
         additional_message=claim_in.additional_message,
+        preferred_handover_method=getattr(claim_in, "preferred_handover_method", "DIRECT"),
     )
     return _serialize_claim(claim)
 
@@ -198,6 +210,7 @@ def submit_claim_unified(
             claimant=current_user,
             verification_details=claim_in.verification_details,
             additional_message=claim_in.additional_message,
+            preferred_handover_method=getattr(claim_in, "preferred_handover_method", "DIRECT"),
         )
     elif claim_in.found_item_id:
         claim = create_direct_claim(
@@ -206,6 +219,7 @@ def submit_claim_unified(
             claimant=current_user,
             verification_details=claim_in.verification_details,
             additional_message=claim_in.additional_message,
+            preferred_handover_method=getattr(claim_in, "preferred_handover_method", "DIRECT"),
         )
     else:
         raise HTTPException(
@@ -310,7 +324,7 @@ def get_claim_detail(
 @router.put(
     "/claims/{claim_id}/review",
     response_model=ClaimResponse,
-    summary="Review claim (Finder action: APPROVE, REJECT, or UNDER_REVIEW)",
+    summary="Review claim (Finder or Reviewer action)",
 )
 def review_claim_endpoint(
     claim_id: int,
@@ -319,8 +333,8 @@ def review_claim_endpoint(
     db: Session = Depends(get_db),
 ) -> Any:
     """
-    Processes finder approval or rejection of an ownership claim.
-    Approval updates item statuses atomically.
+    Processes finder or reviewer action on an ownership claim.
+    Supports routine direct approval, finder review request, and dispute.
     """
     updated_claim = review_claim(
         db=db,
@@ -328,8 +342,35 @@ def review_claim_endpoint(
         reviewer=current_user,
         action=review_in.action,
         reviewer_notes=review_in.reviewer_notes,
+        requires_reviewer=review_in.requires_reviewer,
+        handover_method=review_in.handover_method,
+        review_reason=review_in.review_reason,
     )
     return _serialize_claim(updated_claim)
+
+
+@router.post(
+    "/claims/{claim_id}/dispute",
+    response_model=ClaimResponse,
+    summary="Raise a dispute on an ownership claim",
+)
+def dispute_claim_endpoint(
+    claim_id: int,
+    dispute_in: ClaimDisputeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Raises a dispute on a claim request.
+    Transitions review_status to DISPUTED and halts routine processing.
+    """
+    disputed_claim = raise_claim_dispute(
+        db=db,
+        claim_id=claim_id,
+        current_user=current_user,
+        reason=dispute_in.reason,
+    )
+    return _serialize_claim(disputed_claim)
 
 
 @router.post(

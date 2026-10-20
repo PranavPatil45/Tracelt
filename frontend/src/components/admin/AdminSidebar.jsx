@@ -7,6 +7,8 @@ import {
   CheckCircle2,
   GitCompare,
   FileCheck2,
+  FileCheck,
+  UserCheck,
   RotateCcw,
   Flag,
   Settings,
@@ -22,6 +24,7 @@ const NAV_ITEMS = [
   { path: '/admin/found-items', label: 'Found Items', icon: CheckCircle2 },
   { path: '/admin/matches', label: 'Matches', icon: GitCompare },
   { path: '/admin/claims', label: 'Claims', icon: FileCheck2 },
+  { path: '/admin/assignments', label: 'Reviewer Assignments', icon: UserCheck },
   { path: '/admin/recoveries', label: 'Recoveries', icon: RotateCcw },
   { path: '/admin/reports', label: 'Reports', icon: Flag },
   { path: '/admin/settings', label: 'Settings', icon: Settings },
@@ -88,6 +91,11 @@ export default function AdminSidebar({ mobileOpen, setMobileOpen, onLogout }) {
 
         {/* Footer Actions */}
         <div className="admin-sidebar__footer">
+          <Link to="/reviewer" className="admin-footer-btn" style={{ marginBottom: '0.35rem' }}>
+            <FileCheck size={16} />
+            <span>Reviewer Workspace</span>
+          </Link>
+
           <Link to="/dashboard" className="admin-footer-btn">
             <ArrowLeft size={16} />
             <span>Back to Tracelt</span>

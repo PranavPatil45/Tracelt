@@ -169,7 +169,21 @@ export default function Sidebar({
       highlightBadge: true,
     },
     ...(user &&
-    ["admin", "superadmin", "reviewer"].includes(
+    ["admin", "superadmin", "reviewer", "administrator"].includes(
+      (user.role || "").toLowerCase(),
+    )
+      ? [
+          {
+            id: "reviewer-portal",
+            label: "Reviewer Portal",
+            icon: ShieldCheck,
+            path: "/reviewer",
+            highlightBadge: true,
+          },
+        ]
+      : []),
+    ...(user &&
+    ["admin", "superadmin", "administrator"].includes(
       (user.role || "").toLowerCase(),
     )
       ? [

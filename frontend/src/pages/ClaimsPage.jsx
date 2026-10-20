@@ -23,7 +23,7 @@ import {
 import { useAuth } from '../context/AuthContext.jsx'
 import Sidebar from '../components/dashboard/Sidebar.jsx'
 import DashboardHeader from '../components/dashboard/DashboardHeader.jsx'
-import { getMyClaims, getIncomingClaims, reviewClaim, cancelClaim } from '../api/claims.js'
+import { getMyClaims, getIncomingClaims, reviewClaim, cancelClaim, disputeClaim } from '../api/claims.js'
 import { createConversationForClaim } from '../api/messaging.js'
 import { getClaimRecovery } from '../api/recovery.js'
 import './ClaimsPage.css'
@@ -47,10 +47,18 @@ export default function ClaimsPage() {
 
   // Review Modal State (for Finder)
   const [reviewModalClaim, setReviewModalClaim] = useState(null)
-  const [reviewAction, setReviewAction] = useState('APPROVE') // 'APPROVE' | 'REJECT' | 'UNDER_REVIEW'
+  const [reviewAction, setReviewAction] = useState('APPROVE') // 'APPROVE' | 'REJECT' | 'UNDER_REVIEW' | 'REQUEST_REVIEW'
+  const [handoverMethod, setHandoverMethod] = useState('DIRECT') // 'DIRECT' | 'OTP'
+  const [requiresReviewer, setRequiresReviewer] = useState(false)
   const [reviewerNotes, setReviewerNotes] = useState('')
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [reviewError, setReviewError] = useState('')
+
+  // Dispute Modal State
+  const [disputeModalClaim, setDisputeModalClaim] = useState(null)
+  const [disputeReason, setDisputeReason] = useState('')
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false)
+  const [disputeError, setDisputeError] = useState('')
 
   // Cancel Modal State (for Claimant)
   const [cancelModalClaim, setCancelModalClaim] = useState(null)
@@ -132,9 +140,14 @@ export default function ClaimsPage() {
     setReviewSubmitting(true)
     setReviewError('')
     try {
+      const isMandatory = reviewModalClaim.is_mandatory_review || reviewModalClaim.review_status === 'PENDING'
+      const finalAction = (isMandatory || requiresReviewer) && reviewAction === 'APPROVE' ? 'REQUEST_REVIEW' : reviewAction
+
       const payload = {
-        action: reviewAction,
+        action: finalAction,
         reviewer_notes: reviewerNotes.trim() || undefined,
+        requires_reviewer: requiresReviewer || isMandatory,
+        handover_method: handoverMethod,
       }
       const updated = await reviewClaim(reviewModalClaim.id, payload, token)
       setClaims((prev) =>
@@ -142,11 +155,34 @@ export default function ClaimsPage() {
       )
       setReviewModalClaim(null)
       setReviewerNotes('')
+      setRequiresReviewer(false)
       loadCounts()
     } catch (err) {
       setReviewError(err.message || 'Failed to submit review. Please try again.')
     } finally {
       setReviewSubmitting(false)
+    }
+  }
+
+  // Handle Dispute Claim
+  async function handleConfirmDispute(e) {
+    e.preventDefault()
+    if (!disputeModalClaim || !disputeReason.trim()) return
+
+    setDisputeSubmitting(true)
+    setDisputeError('')
+    try {
+      const updated = await disputeClaim(disputeModalClaim.id, { reason: disputeReason.trim() }, token)
+      setClaims((prev) =>
+        prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
+      )
+      setDisputeModalClaim(null)
+      setDisputeReason('')
+      loadCounts()
+    } catch (err) {
+      setDisputeError(err.message || 'Failed to submit dispute.')
+    } finally {
+      setDisputeSubmitting(false)
     }
   }
 
@@ -342,6 +378,29 @@ export default function ClaimsPage() {
                             {isRejected && <XCircle size={13} />}
                             <span>{claim.status.replace('_', ' ')}</span>
                           </span>
+
+                          {claim.review_status && claim.review_status !== 'NOT_REQUIRED' && (
+                            <span
+                              className={`claim-badge ${
+                                claim.review_status === 'APPROVED'
+                                  ? 'claim-badge--approved'
+                                  : claim.review_status === 'DISPUTED'
+                                  ? 'claim-badge--rejected'
+                                  : 'claim-badge--under_review'
+                              }`}
+                              style={{ marginLeft: '6px' }}
+                              title={claim.review_reason || 'Reviewer Intervention'}
+                            >
+                              <ShieldCheck size={13} />
+                              <span>
+                                {claim.review_status === 'PENDING'
+                                  ? `Review: ${claim.review_reason || 'Pending'}`
+                                  : claim.review_status === 'DISPUTED'
+                                  ? 'Disputed'
+                                  : 'Reviewer Approved'}
+                              </span>
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -487,7 +546,7 @@ export default function ClaimsPage() {
                             <span>
                               {isPending && 'Awaiting finder review. You may cancel if needed.'}
                               {isUnderReview && 'Finder is currently verifying your details.'}
-                              {isApproved && 'Ownership verified! Item marked Recovered.'}
+                              {isApproved && 'Claim approved! Physical handover in progress.'}
                               {isRejected && 'Verification was not accepted by the finder.'}
                               {isCancelled && 'You cancelled this claim.'}
                             </span>
@@ -530,6 +589,23 @@ export default function ClaimsPage() {
                             </button>
                           )}
 
+                          {/* Dispute Action (Claimant or Finder) */}
+                          {(isPending || isUnderReview || isApproved) && claim.review_status !== 'DISPUTED' && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              style={{ color: '#f43f5e', borderColor: 'rgba(244,63,94,0.3)' }}
+                              onClick={() => {
+                                setDisputeModalClaim(claim)
+                                setDisputeReason('')
+                                setDisputeError('')
+                              }}
+                            >
+                              <AlertCircle size={14} />
+                              <span>Dispute</span>
+                            </button>
+                          )}
+
                           {/* Claimant Actions */}
                           {!isFinder && isPending && (
                             <button
@@ -549,7 +625,10 @@ export default function ClaimsPage() {
                               className="btn btn-primary btn-sm"
                               onClick={() => {
                                 setReviewModalClaim(claim)
-                                setReviewAction('APPROVE')
+                                const isMandatory = claim.is_mandatory_review || claim.review_status === 'PENDING'
+                                setReviewAction(isMandatory ? 'REQUEST_REVIEW' : 'APPROVE')
+                                setRequiresReviewer(isMandatory)
+                                setHandoverMethod(claim.is_mandatory_otp ? 'OTP' : (claim.handover_method || 'DIRECT'))
                                 setReviewerNotes('')
                                 setReviewError('')
                               }}
@@ -606,6 +685,19 @@ export default function ClaimsPage() {
                 </div>
               )}
 
+              {/* Mandatory Review Notice */}
+              {(reviewModalClaim.is_mandatory_review || reviewModalClaim.review_status === 'PENDING') && (
+                <div style={{ background: 'rgba(234, 179, 8, 0.12)', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '12px 14px', borderRadius: '8px', color: '#eab308', fontSize: '13px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                    <ShieldCheck size={16} />
+                    <span>Reviewer Intervention Required</span>
+                  </div>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    This item has been flagged for staff Reviewer authorization ({reviewModalClaim.review_reason || 'High Risk / Competing Claims'}). Routine direct approval is blocked. You may request staff assistance to review and authorize handover.
+                  </p>
+                </div>
+              )}
+
               {/* Evidence Review Display */}
               <div className="claim-evidence-box">
                 <div className="claim-evidence-header">
@@ -624,20 +716,41 @@ export default function ClaimsPage() {
               <div className="form-group">
                 <label className="form-label">Review Decision *</label>
                 <div className="review-modal-choice-grid">
+                  {!(reviewModalClaim.is_mandatory_review || reviewModalClaim.review_status === 'PENDING') && (
+                    <button
+                      type="button"
+                      className={`review-choice-btn ${reviewAction === 'APPROVE' && !requiresReviewer ? 'review-choice-btn--approve-active' : ''}`}
+                      onClick={() => {
+                        setReviewAction('APPROVE')
+                        setRequiresReviewer(false)
+                      }}
+                      disabled={reviewSubmitting}
+                    >
+                      <CheckCircle2 size={22} />
+                      <span className="review-choice-title">Direct Approval</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
-                    className={`review-choice-btn ${reviewAction === 'APPROVE' ? 'review-choice-btn--approve-active' : ''}`}
-                    onClick={() => setReviewAction('APPROVE')}
+                    className={`review-choice-btn ${requiresReviewer || reviewAction === 'REQUEST_REVIEW' ? 'review-choice-btn--review-active' : ''}`}
+                    onClick={() => {
+                      setReviewAction('REQUEST_REVIEW')
+                      setRequiresReviewer(true)
+                    }}
                     disabled={reviewSubmitting}
                   >
-                    <CheckCircle2 size={22} />
-                    <span className="review-choice-title">Approve Claim</span>
+                    <ShieldCheck size={22} />
+                    <span className="review-choice-title">Request Reviewer</span>
                   </button>
 
                   <button
                     type="button"
-                    className={`review-choice-btn ${reviewAction === 'UNDER_REVIEW' ? 'review-choice-btn--review-active' : ''}`}
-                    onClick={() => setReviewAction('UNDER_REVIEW')}
+                    className={`review-choice-btn ${reviewAction === 'UNDER_REVIEW' && !requiresReviewer ? 'review-choice-btn--review-active' : ''}`}
+                    onClick={() => {
+                      setReviewAction('UNDER_REVIEW')
+                      setRequiresReviewer(false)
+                    }}
                     disabled={reviewSubmitting}
                   >
                     <Clock size={22} />
@@ -647,7 +760,10 @@ export default function ClaimsPage() {
                   <button
                     type="button"
                     className={`review-choice-btn ${reviewAction === 'REJECT' ? 'review-choice-btn--reject-active' : ''}`}
-                    onClick={() => setReviewAction('REJECT')}
+                    onClick={() => {
+                      setReviewAction('REJECT')
+                      setRequiresReviewer(false)
+                    }}
                     disabled={reviewSubmitting}
                   >
                     <XCircle size={22} />
@@ -656,14 +772,55 @@ export default function ClaimsPage() {
                 </div>
               </div>
 
+              {/* Handover Verification Method Choice (when approving directly) */}
+              {reviewAction === 'APPROVE' && !requiresReviewer && !(reviewModalClaim.is_mandatory_review || reviewModalClaim.review_status === 'PENDING') && (
+                <div className="form-group" style={{ background: 'var(--bg-elevated-2)', padding: '12px 14px', borderRadius: '8px' }}>
+                  <label className="form-label" style={{ marginBottom: '8px' }}>Handover Verification Method</label>
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="handover_method"
+                        value="DIRECT"
+                        checked={handoverMethod === 'DIRECT' && !reviewModalClaim.is_mandatory_otp}
+                        disabled={reviewModalClaim.is_mandatory_otp}
+                        onChange={() => setHandoverMethod('DIRECT')}
+                      />
+                      <span>Direct Confirmation (In-person)</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="handover_method"
+                        value="OTP"
+                        checked={handoverMethod === 'OTP' || reviewModalClaim.is_mandatory_otp}
+                        onChange={() => setHandoverMethod('OTP')}
+                      />
+                      <span>OTP Verification (6-Digit Code)</span>
+                    </label>
+                  </div>
+                  {reviewModalClaim.is_mandatory_otp && (
+                    <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: '#eab308' }}>
+                      * High-risk items require secure OTP verification.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Impact Notice */}
               <div className="review-modal-explanation">
-                {reviewAction === 'APPROVE' && (
+                {reviewAction === 'APPROVE' && !requiresReviewer && (
                   <span>
-                    <strong>Approval Impact:</strong> The found item will be marked as <strong>CLAIMED</strong>, the owner&rsquo;s lost report will be marked <strong>RECOVERED</strong>, and this claim will be <strong>APPROVED</strong>.
+                    <strong>Approval Impact:</strong> The found item will be marked as <strong>CLAIMED</strong> and physical handover coordination will begin ({handoverMethod === 'OTP' ? 'OTP Verification required' : 'Direct Confirmation'}).
                   </span>
                 )}
-                {reviewAction === 'UNDER_REVIEW' && (
+                {(requiresReviewer || reviewAction === 'REQUEST_REVIEW') && (
+                  <span>
+                    <strong>Reviewer Assistance Impact:</strong> The claim will be forwarded to campus staff reviewers for mediation. You will be notified once reviewed.
+                  </span>
+                )}
+                {reviewAction === 'UNDER_REVIEW' && !requiresReviewer && (
                   <span>
                     <strong>Under Review Impact:</strong> The claimant will be notified that you are cross-checking details. The item remains available.
                   </span>
@@ -729,6 +886,88 @@ export default function ClaimsPage() {
                     </>
                   ) : (
                     <span>Confirm Decision</span>
+                  )}
+                </button>
+              </footer>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Dispute Claim Modal */}
+      {disputeModalClaim && (
+        <div
+          className="claim-modal-backdrop"
+          onClick={() => setDisputeModalClaim(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="claim-modal-card" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <header className="claim-modal-header">
+              <h2 className="claim-modal-title" style={{ color: '#f43f5e' }}>
+                <AlertCircle size={20} className="claim-modal-title-icon" />
+                <span>Raise Dispute on Claim #{disputeModalClaim.id}</span>
+              </h2>
+              <button
+                type="button"
+                className="claim-modal-close"
+                onClick={() => setDisputeModalClaim(null)}
+                disabled={disputeSubmitting}
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            <form onSubmit={handleConfirmDispute} className="claim-modal-body">
+              {disputeError && (
+                <div className="claim-modal-error">
+                  <AlertCircle size={16} />
+                  <span>{disputeError}</span>
+                </div>
+              )}
+
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                Raising a dispute pauses all routine handover steps and refers the claim to a campus staff reviewer for investigation.
+              </p>
+
+              <div className="form-group" style={{ marginTop: '12px' }}>
+                <label className="form-label" htmlFor="dispute-reason">
+                  Reason for Dispute *
+                </label>
+                <textarea
+                  id="dispute-reason"
+                  rows={4}
+                  className="form-textarea"
+                  placeholder="Explain why this claim or evidence is disputed (e.g. conflicting item serial number, suspected false claim, claimant did not show up, etc.)..."
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                  maxLength={1000}
+                  disabled={disputeSubmitting}
+                  required
+                />
+              </div>
+
+              <footer className="claim-modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setDisputeModalClaim(null)}
+                  disabled={disputeSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-danger"
+                  disabled={disputeSubmitting || !disputeReason.trim()}
+                >
+                  {disputeSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Submitting Dispute...</span>
+                    </>
+                  ) : (
+                    <span>Submit Dispute</span>
                   )}
                 </button>
               </footer>

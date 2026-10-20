@@ -347,3 +347,42 @@ export async function getActiveClaimForFoundItem(foundItemId, token) {
 
   return { has_active_claim: false, claim: null }
 }
+
+/**
+ * Raise a dispute on a claim request.
+ *
+ * @param {number|string} claimId
+ * @param {object} payload
+ * @param {string} payload.reason
+ * @param {string} token
+ * @returns {Promise<object>}
+ */
+export async function disputeClaim(claimId, payload, token) {
+  let response
+  try {
+    response = await fetch(`${API_BASE_URL}/claims/${claimId}/dispute`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    throw new ClaimApiError('Unable to submit dispute. Check your connection.', 0)
+  }
+
+  let data = null
+  try {
+    data = await response.json()
+  } catch {
+    // Non-JSON
+  }
+
+  if (!response.ok) {
+    throw new ClaimApiError(data?.detail || 'Failed to submit dispute.', response.status, data)
+  }
+
+  return data
+}
+

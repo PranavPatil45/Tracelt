@@ -174,14 +174,14 @@ class AdminMatchListResponse(BaseModel):
 # --- Claims Management ---
 class AdminClaimItem(BaseModel):
     id: int
-    match_id: int
+    match_id: Optional[int] = None
     claimant_id: int
     claimant_name: str
     claimant_email: str
     finder_id: Optional[int] = None
     finder_name: Optional[str] = None
-    lost_item_id: int
-    lost_item_title: str
+    lost_item_id: Optional[int] = None
+    lost_item_title: Optional[str] = None
     found_item_id: int
     found_item_title: str
     verification_details: str
@@ -192,6 +192,17 @@ class AdminClaimItem(BaseModel):
     reviewer_notes: Optional[str] = None
     created_at: datetime
 
+    # Hybrid Reviewer Workflow fields (Task 3)
+    review_status: str = "NOT_REQUIRED"
+    review_reason: Optional[str] = None
+    review_decision_notes: Optional[str] = None
+    review_decision_by_name: Optional[str] = None
+    review_decision_at: Optional[datetime] = None
+    handover_method: str = "DIRECT"
+    is_mandatory_review: bool = False
+    is_mandatory_otp: bool = False
+    is_competing: bool = False
+
 
 class AdminClaimListResponse(BaseModel):
     claims: List[AdminClaimItem]
@@ -201,16 +212,21 @@ class AdminClaimListResponse(BaseModel):
 
 
 class AdminClaimReviewRequest(BaseModel):
-    action: str = Field(..., description="APPROVE or REJECT")
+    action: str = Field(..., description="APPROVE, REJECT, DISPUTE, or UNDER_REVIEW")
     reviewer_notes: Optional[str] = None
+
+
+class AdminDisputeResolveRequest(BaseModel):
+    decision: str = Field(..., description="APPROVE or REJECT")
+    notes: Optional[str] = None
 
 
 # --- Recoveries Management ---
 class AdminRecoveryItem(BaseModel):
     id: int
     claim_id: int
-    lost_item_id: int
-    lost_item_title: str
+    lost_item_id: Optional[int] = None
+    lost_item_title: Optional[str] = None
     found_item_id: int
     found_item_title: str
     claimant_id: int
@@ -223,6 +239,13 @@ class AdminRecoveryItem(BaseModel):
     returned_at: Optional[datetime] = None
     confirmed_at: Optional[datetime] = None
     created_at: datetime
+
+    # Hybrid Reviewer Workflow fields (Task 3)
+    review_status: str = "NOT_REQUIRED"
+    review_reason: Optional[str] = None
+    handover_method: str = "DIRECT"
+    dispute_reason: Optional[str] = None
+    disputed_by_name: Optional[str] = None
 
 
 class AdminRecoveryListResponse(BaseModel):

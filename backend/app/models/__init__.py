@@ -8,6 +8,7 @@ from app.models.conversation import Conversation
 from app.models.conversation_participant import ConversationParticipant
 from app.models.message import Message
 from app.models.recovery import Recovery
+from app.models.reviewer_assignment import ReviewerAssignment
 from app.models.admin_audit_log import AdminAuditLog
 from app.models.report import Report
 
@@ -22,6 +23,7 @@ __all__ = [
     "ConversationParticipant",
     "Message",
     "Recovery",
+    "ReviewerAssignment",
     "AdminAuditLog",
     "Report",
 ]

@@ -114,11 +114,12 @@ export async function fetchAdminMatches(token, { status, campus, page = 1, limit
 }
 
 // --- Claims ---
-export async function fetchAdminClaims(token, { status, campus, page = 1, limit = 20 } = {}) {
+export async function fetchAdminClaims(token, { status, review_status, campus, page = 1, limit = 20 } = {}) {
   const url = new URL(`${window.location.origin}${API_BASE_URL}/admin/claims`)
   url.searchParams.set('page', page)
   url.searchParams.set('limit', limit)
   if (status && status !== 'ALL') url.searchParams.set('status', status)
+  if (review_status && review_status !== 'ALL') url.searchParams.set('review_status', review_status)
   if (campus && campus !== 'ALL') url.searchParams.set('campus', campus)
   const res = await fetch(url.toString(), { headers: getAuthHeaders(token) })
   return handleResponse(res)
@@ -134,11 +135,12 @@ export async function reviewAdminClaim(token, claimId, { action, reviewer_notes 
 }
 
 // --- Recoveries ---
-export async function fetchAdminRecoveries(token, { status, campus, page = 1, limit = 20 } = {}) {
+export async function fetchAdminRecoveries(token, { status, review_status, campus, page = 1, limit = 20 } = {}) {
   const url = new URL(`${window.location.origin}${API_BASE_URL}/admin/recoveries`)
   url.searchParams.set('page', page)
   url.searchParams.set('limit', limit)
   if (status && status !== 'ALL') url.searchParams.set('status', status)
+  if (review_status && review_status !== 'ALL') url.searchParams.set('review_status', review_status)
   if (campus && campus !== 'ALL') url.searchParams.set('campus', campus)
   const res = await fetch(url.toString(), { headers: getAuthHeaders(token) })
   return handleResponse(res)
@@ -178,5 +180,55 @@ export async function fetchAdminAuditLogs(token, { page = 1, limit = 20 } = {}) 
   url.searchParams.set('page', page)
   url.searchParams.set('limit', limit)
   const res = await fetch(url.toString(), { headers: getAuthHeaders(token) })
+  return handleResponse(res)
+}
+
+
+// --- Reviewer Workload & Assignment Management ---
+export async function fetchAdminReviewers(token, campus) {
+  const url = new URL(`${window.location.origin}${API_BASE_URL}/admin/reviewers`)
+  if (campus && campus !== 'ALL') url.searchParams.set('campus', campus)
+  const res = await fetch(url.toString(), { headers: getAuthHeaders(token) })
+  return handleResponse(res)
+}
+
+export async function fetchAdminUnassignedCases(token, campus) {
+  const url = new URL(`${window.location.origin}${API_BASE_URL}/admin/assignments/unassigned`)
+  if (campus && campus !== 'ALL') url.searchParams.set('campus', campus)
+  const res = await fetch(url.toString(), { headers: getAuthHeaders(token) })
+  return handleResponse(res)
+}
+
+export async function assignAdminClaim(token, claimId, { reviewer_id, notes } = {}) {
+  const res = await fetch(`${API_BASE_URL}/admin/claims/${claimId}/assign`, {
+    method: 'POST',
+    headers: getAuthHeaders(token),
+    body: JSON.stringify({ reviewer_id, notes }),
+  })
+  return handleResponse(res)
+}
+
+export async function assignAdminRecovery(token, recoveryId, { reviewer_id, notes } = {}) {
+  const res = await fetch(`${API_BASE_URL}/admin/recoveries/${recoveryId}/assign`, {
+    method: 'POST',
+    headers: getAuthHeaders(token),
+    body: JSON.stringify({ reviewer_id, notes }),
+  })
+  return handleResponse(res)
+}
+
+export async function autoAssignAdminCases(token, { campus } = {}) {
+  const res = await fetch(`${API_BASE_URL}/admin/assignments/auto-assign`, {
+    method: 'POST',
+    headers: getAuthHeaders(token),
+    body: JSON.stringify({ campus: campus && campus !== 'ALL' ? campus : undefined }),
+  })
+  return handleResponse(res)
+}
+
+export async function fetchAssignmentHistory(token, caseType, caseId) {
+  const res = await fetch(`${API_BASE_URL}/admin/assignments/history/${caseType}/${caseId}`, {
+    headers: getAuthHeaders(token),
+  })
   return handleResponse(res)
 }
