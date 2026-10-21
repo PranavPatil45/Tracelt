@@ -22,7 +22,7 @@ class AdminStatsResponse(BaseModel):
     pending_claims: int
     recovered_items: int
     active_reports: int
-    recovery_rate: float
+    recovery_rate: Optional[float] = None
     top_categories: List[CategoryCount] = []
     top_locations: List[LocationCount] = []
     campus_scope: str

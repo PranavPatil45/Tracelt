@@ -78,7 +78,11 @@ export function CategoryDistributionChart({ categories = [] }) {
   )
 }
 
-export function RecoveryRateGauge({ rate = 0, recoveredCount = 0, totalCount = 0 }) {
+export function RecoveryRateGauge({ rate = null, recoveredCount = 0, totalCount = 0 }) {
+  const isNa = rate === null || totalCount === 0
+  const displayRate = isNa ? 'N/A' : `${rate}%`
+  const clampedRate = isNa ? 0 : Math.min(Math.max(rate, 0), 100)
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
       <div style={{
@@ -101,7 +105,7 @@ export function RecoveryRateGauge({ rate = 0, recoveredCount = 0, totalCount = 0
             fill="none"
             stroke="var(--cyan)"
             strokeWidth="3.2"
-            strokeDasharray={`${rate}, 100`}
+            strokeDasharray={`${clampedRate}, 100`}
             style={{ transition: 'stroke-dasharray 0.6s ease' }}
           />
         </svg>
@@ -111,14 +115,18 @@ export function RecoveryRateGauge({ rate = 0, recoveredCount = 0, totalCount = 0
           flexDirection: 'column',
           alignItems: 'center'
         }}>
-          <span style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)' }}>{rate}%</span>
+          <span style={{ fontSize: isNa ? '1rem' : '1.1rem', fontWeight: '800', color: isNa ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+            {displayRate}
+          </span>
         </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
         <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>Overall Recovery Rate</span>
         <span style={{ color: 'var(--text-muted)' }}>
-          {recoveredCount} of {totalCount} lost items returned to verified owners.
+          {isNa
+            ? 'No eligible lost reports registered yet.'
+            : `${recoveredCount} of ${totalCount} lost items returned to verified owners.`}
         </span>
       </div>
     </div>

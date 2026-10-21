@@ -207,7 +207,7 @@ export default function AdminOverview() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
             <RecoveryRateGauge
-              rate={stats ? stats.recovery_rate : 0}
+              rate={stats?.recovery_rate ?? null}
               recoveredCount={stats ? stats.recovered_items : 0}
               totalCount={stats ? stats.total_lost_items : 0}
             />

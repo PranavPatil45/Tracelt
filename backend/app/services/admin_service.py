@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, Set
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, desc
@@ -90,34 +90,91 @@ def get_admin_stats(db: Session, campus_scope: Optional[str]) -> AdminStatsRespo
         match_q = match_q.join(LostItem, Match.lost_item_id == LostItem.id).filter(LostItem.campus == clean_campus)
     active_matches = match_q.count()
 
-    # Pending Claims
+    # Pending Claims (support both match-based and direct claims)
     claim_q = db.query(Claim).filter(Claim.status.in_(["PENDING", "UNDER_REVIEW"]))
     if clean_campus:
         claim_q = (
-            claim_q.join(Match, Claim.match_id == Match.id)
-            .join(LostItem, Match.lost_item_id == LostItem.id)
-            .filter(LostItem.campus == clean_campus)
+            claim_q.outerjoin(Match, Claim.match_id == Match.id)
+            .outerjoin(LostItem, or_(Match.lost_item_id == LostItem.id, Claim.lost_item_id == LostItem.id))
+            .outerjoin(FoundItem, or_(Match.found_item_id == FoundItem.id, Claim.found_item_id == FoundItem.id))
+            .filter(or_(LostItem.campus == clean_campus, FoundItem.campus == clean_campus))
         )
     pending_claims = claim_q.count()
 
-    # Recovered Items
-    rec_q = db.query(Recovery).filter(Recovery.status == "RECOVERED")
+    # Recovered Items (Counting distinct successfully recovered lost items / direct items)
+    # Strictly enforce completed recovery lifecycle:
+    # 1. Recovery status must be RECOVERED (physical handover confirmed by claimant).
+    # 2. Review status must be APPROVED or NOT_REQUIRED (not PENDING, UNDER_REVIEW, DISPUTED, or REJECTED).
+    # 3. No unresolved dispute.
+    # 4. If handover method is OTP, OTP verification must have succeeded (otp_verified_at is not null).
+    rec_q = (
+        db.query(Recovery)
+        .outerjoin(LostItem, Recovery.lost_item_id == LostItem.id)
+        .outerjoin(FoundItem, Recovery.found_item_id == FoundItem.id)
+        .outerjoin(Claim, Recovery.claim_id == Claim.id)
+        .filter(
+            Recovery.status == "RECOVERED",
+            Recovery.review_status.notin_(["PENDING", "UNDER_REVIEW", "DISPUTED", "REJECTED"]),
+            Recovery.dispute_reason.is_(None),
+        )
+    )
     if clean_campus:
-        rec_q = rec_q.join(LostItem, Recovery.lost_item_id == LostItem.id).filter(LostItem.campus == clean_campus)
-    recovered_items = rec_q.count()
-    if recovered_items == 0:
-        # Fallback to checking lost_items status
-        lost_rec_q = db.query(LostItem).filter(LostItem.status == "RECOVERED")
-        if clean_campus:
-            lost_rec_q = lost_rec_q.filter(LostItem.campus == clean_campus)
-        recovered_items = lost_rec_q.count()
+        rec_q = rec_q.filter(
+            or_(
+                LostItem.campus == clean_campus,
+                FoundItem.campus == clean_campus,
+            )
+        )
+    all_recoveries = rec_q.all()
+
+    recovered_lost_ids: Set[int] = set()
+    recovered_direct_ids: Set[int] = set()
+
+    for rec in all_recoveries:
+        # OTP verification safeguard
+        if (rec.handover_method or "").upper() == "OTP" and not rec.otp_verified_at:
+            continue
+
+        target_lost_id = rec.lost_item_id or (rec.claim.lost_item_id if rec.claim else None)
+        if target_lost_id:
+            recovered_lost_ids.add(target_lost_id)
+        else:
+            # Check if claimant had a matching lost item report on that campus
+            claimant_lost_item = None
+            if rec.claimant_id:
+                cl_q = db.query(LostItem).filter(
+                    LostItem.user_id == rec.claimant_id,
+                    LostItem.status.in_(["RECOVERED", "ACTIVE", "CLAIMED"]),
+                )
+                if clean_campus:
+                    cl_q = cl_q.filter(LostItem.campus == clean_campus)
+                if rec.found_item and rec.found_item.category:
+                    cl_q_cat = cl_q.filter(LostItem.category == rec.found_item.category).first()
+                    if cl_q_cat:
+                        claimant_lost_item = cl_q_cat
+                if not claimant_lost_item:
+                    claimant_lost_item = cl_q.first()
+
+            if claimant_lost_item:
+                recovered_lost_ids.add(claimant_lost_item.id)
+            elif rec.found_item_id:
+                # Direct claim recovery where no prior lost item was reported
+                recovered_direct_ids.add(rec.found_item_id)
+
+    total_distinct_recovered = len(recovered_lost_ids) + len(recovered_direct_ids)
+
+    # Ensure metric consistency:
+    # Recovered items cannot exceed total eligible lost items if eligible lost items exist
+    if total_lost_items > 0:
+        recovered_items = min(total_distinct_recovered, total_lost_items)
+        recovery_rate = round((recovered_items / total_lost_items * 100.0), 1)
+    else:
+        recovered_items = total_distinct_recovered
+        recovery_rate = None
 
     # Active Reports
     rep_q = db.query(Report).filter(Report.status == "PENDING")
     active_reports = rep_q.count()
-
-    # Recovery Rate = (recovered_items / total_lost_items * 100)
-    recovery_rate = round((recovered_items / total_lost_items * 100.0), 1) if total_lost_items > 0 else 0.0
 
     # Top Categories (Aggregation across Lost and Found items)
     cat_lost = db.query(LostItem.category, func.count(LostItem.id).label("c"))

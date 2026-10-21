@@ -321,3 +321,17 @@
   padding: 1.25rem 1.5rem;
   border-top: 1px solid var(--border-hair);
 }
+
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
